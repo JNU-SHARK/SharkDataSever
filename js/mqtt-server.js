@@ -29,7 +29,7 @@ class MQTTServer {
 
     async loadProto() {
         try {
-            const protoPath = path.join(__dirname, 'proto', 'messages.proto');
+            const protoPath = path.join(__dirname, '..', 'proto', 'messages.proto');
             // 读取原始 proto 文本并尝试清理多余的 package 定义（某些 proto 文件中可能重复写了 package）
             const protoTextRaw = fs.readFileSync(protoPath, 'utf8');
             const protoTextSanitized = protoTextRaw.replace(/^\s*package\s+\S+;\s*$/gm, '');

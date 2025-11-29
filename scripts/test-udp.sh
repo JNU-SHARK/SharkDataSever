@@ -60,7 +60,8 @@ main() {
     # 捕获 Ctrl+C
     trap 'echo ""; print_info "正在关闭客户端..."; exit 0' INT TERM
     
-    node test-udp-client.js
+    cd ..
+    node js/UDPserver.js
 }
 
 # 运行主函数

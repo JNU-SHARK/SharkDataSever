@@ -7,6 +7,7 @@ echo.
 
 echo 📡 正在监听 UDP 视频流...
 echo.
-node test-udp-client.js
+cd ..
+node js\UDPserver.js
 
 pause

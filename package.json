@@ -1,13 +1,13 @@
 {
   "name": "shark-data-server",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "UDP视频流和MQTT数据发送模拟服务器",
-  "main": "server.js",
+  "main": "js/UDPserver.js",
   "scripts": {
-    "start": "node server.js",
-    "test:mqtt": "node test-mqtt-client.js",
-    "test:udp": "node test-udp-client.js",
-    "mqtt": "node mqtt-server.js",
+    "start": "node js/UDPserver.js",
+    "mqtt": "node js/mqtt-server.js",
+    "mqtt-visual": "node js/mqtt-server-visual.js",
+    "udp": "node js/UDPserver.js",
     "proto": "pbjs -t static-module -w commonjs -o proto/messages.js proto/messages.proto && pbts -o proto/messages.d.ts proto/messages.js"
   },
   "keywords": [

@@ -42,7 +42,7 @@ class UDPVideoStreamer {
     }
 
     async streamVideo() {
-        const videoDir = path.join(__dirname, 'VideoSource');
+        const videoDir = path.join(__dirname, '..', 'VideoSource');
         
         // 查找视频文件
         if (!fs.existsSync(videoDir)) {

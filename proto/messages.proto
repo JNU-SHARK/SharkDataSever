@@ -10,79 +10,79 @@ syntax = "proto3";
 package rm_client_up;
 
 // 2.2.1 RemoteControl
-// 用途: 传输鼠标键盘输入和自定义数据 (频率: 75Hz) [cite: 557, 567]
+// 用途: 传输鼠标键盘输入和自定义数据 (频率: 75Hz)
 message RemoteControl {
-    int32 mouse_x = 1; // 鼠标 x 轴移动速度, 负值标识向左移动 [cite: 568]
-    int32 mouse_y = 2; // 鼠标 y 轴移动速度, 负值标识向下移动 [cite: 568]
-    int32 mouse_z = 3; // 鼠标滚轮移动速度, 负值标识向后滚动 [cite: 568]
-    bool left_button_down = 4; // 左键是否按下 (false=抬起, true=按下) [cite: 568]
-    bool right_button_down = 5; // 右键是否按下 (false=抬起, true=按下) [cite: 568]
-    uint32 keyboard_value = 6; // 键盘按键位掩码 [cite: 572]
-    bool mid_button_down = 7; // 中键是否按下 (false=抬起, true=按下) [cite: 572]
-    bytes data = 8; // 最大30字节的自定义数据 [cite: 572]
+    int32 mouse_x = 1; // 鼠标 x 轴移动速度, 负值标识向左移动
+    int32 mouse_y = 2; // 鼠标 y 轴移动速度, 负值标识向下移动
+    int32 mouse_z = 3; // 鼠标滚轮移动速度, 负值标识向后滚动
+    bool left_button_down = 4; // 左键是否按下 (false=抬起, true=按下)
+    bool right_button_down = 5; // 右键是否按下 (false=抬起, true=按下)
+    uint32 keyboard_value = 6; // 键盘按键位掩码
+    bool mid_button_down = 7; // 中键是否按下 (false=抬起, true=按下)
+    bytes data = 8; // 最大30字节的自定义数据
 }
 
 // 2.2.16 MapClickInfoNotify
-// 用途: 云台手地图点击标记 (频率: 触发式发送) [cite: 561, 865]
+// 用途: 云台手地图点击标记 (频率: 触发式发送)
 message MapClickInfoNotify {
-    uint32 is_send_all = 1; // 发送范围 (0=指定客户端, 1=除哨兵, 2=包含哨兵) [cite: 866]
-    bytes robot_id = 2; // 目标机器人 ID 列表(固定7字节) [cite: 866]
-    uint32 mode = 3; // 标记模式(1=地图,2=对方机器人) [cite: 866]
-    uint32 enemy_id = 4; // 标定的对方 ID [cite: 866]
-    uint32 ascii = 5; // 自定义图标 ASCII 码 [cite: 866]
-    uint32 type = 6; // 标记类型(1=攻击,2=防御,3=警戒,4-自定义) [cite: 866]
-    uint32 screen_x = 7; // 屏幕坐标 X(像素) [cite: 866]
-    uint32 screen_y = 8; // 屏幕坐标 Y(像素) [cite: 866]
-    float map_x = 9; // 地图坐标 X [cite: 866]
-    float map_y = 10; // 地图坐标 Y [cite: 866]
+    uint32 is_send_all = 1; // 发送范围 (0=指定客户端, 1=除哨兵, 2=包含哨兵)
+    bytes robot_id = 2; // 目标机器人 ID 列表(固定7字节)
+    uint32 mode = 3; // 标记模式(1=地图,2=对方机器人)
+    uint32 enemy_id = 4; // 标定的对方 ID
+    uint32 ascii = 5; // 自定义图标 ASCII 码
+    uint32 type = 6; // 标记类型(1=攻击,2=防御,3=警戒,4-自定义)
+    uint32 screen_x = 7; // 屏幕坐标 X(像素)
+    uint32 screen_y = 8; // 屏幕坐标 Y(像素)
+    float map_x = 9; // 地图坐标 X
+    float map_y = 10; // 地图坐标 Y
 }
 
 // 2.2.19 AssemblyCommand
-// 用途: 工程装配指令 (频率: 1Hz) [cite: 561, 901]
+// 用途: 工程装配指令 (频率: 1Hz)
 message AssemblyCommand {
-    uint32 operation = 1; // 装配操作类型(1=确认装配, 2=取消装配) [cite: 902]
-    uint32 difficulty = 2; // 选中的装配难度 [cite: 902]
+    uint32 operation = 1; // 装配操作类型(1=确认装配, 2=取消装配)
+    uint32 difficulty = 2; // 选中的装配难度
 }
 
 // 2.2.21 RobotPerformanceSelectionCommand
-// 用途: 步兵/英雄选择性能体系 (频率: 1Hz) [cite: 562, 927]
+// 用途: 步兵/英雄选择性能体系 (频率: 1Hz)
 message RobotPerformanceSelectionCommand {
-    uint32 shooter = 1; // 发射机构性能体系 [cite: 928]
-    uint32 chassis = 2; // 底盘性能体系 [cite: 928]
+    uint32 shooter = 1; // 发射机构性能体系
+    uint32 chassis = 2; // 底盘性能体系
 }
 
 // 2.2.23 HeroDeployModeEventCommand
-// 用途: 英雄部署模式指令 (频率: 1Hz) [cite: 564, 945]
+// 用途: 英雄部署模式指令 (频率: 1Hz)
 message HeroDeployModeEventCommand {
-    uint32 mode = 1; // 模式(0=退出,1=进入) [cite: 946]
+    uint32 mode = 1; // 模式(0=退出,1=进入)
 }
 
 // 2.2.25 RuneActivateCommand
-// 用途: 能量机关激活指令 (频率: 1Hz) [cite: 564, 959]
+// 用途: 能量机关激活指令 (频率: 1Hz)
 message RuneActivateCommand {
-    uint32 activate = 1; // 激活(1=开启) [cite: 960]
+    uint32 activate = 1; // 激活(1=开启)
 }
 
 // 2.2.28 DartCommand
-// 用途: 飞镖控制指令 (频率: 1Hz) [cite: 564, 986]
+// 用途: 飞镖控制指令 (频率: 1Hz)
 message DartCommand {
-    // 目标ID 枚举值: 1=前哨站, 2=基地固定目标, 3=基地随机固定目标, 4=基地随机移动目标, 5=基地末端移动目标 [cite: 988]
-    uint32 target_id = 1; // 目标ID [cite: 988]
-    bool open = 2; // 闸门开关 [cite: 988]
+    // 目标ID 枚举值: 1=前哨站, 2=基地固定目标, 3=基地随机固定目标, 4=基地随机移动目标, 5=基地末端移动目标
+    uint32 target_id = 1; // 目标ID
+    bool open = 2; // 闸门开关
 }
 
 // 2.2.30 GuardCtrlCommand
-// 用途: 哨兵控制指令请求 (频率: 1Hz) [cite: 564, 1004]
+// 用途: 哨兵控制指令请求 (频率: 1Hz)
 message GuardCtrlCommand {
-    // 指令编号枚举: 1:补血点补弹, ... 10:切换为移动姿态 [cite: 1006-1023]
-    uint32 command_id = 1; // 指令编号(0=无效) [cite: 1005]
+    // 指令编号枚举: 1:补血点补弹, ... 10:切换为移动姿态
+    uint32 command_id = 1; // 指令编号(0=无效)
 }
 
 // 2.2.32 AirSupportCommand
-// 用途: 空中支援指令 (频率: 1Hz) [cite: 564, 1039]
+// 用途: 空中支援指令 (频率: 1Hz)
 message AirSupportCommand {
-    // command_id 枚举值: 1:免费呼叫, 2:花费金币呼叫, 3:中断 [cite: 1041-1045]
-    uint32 command_id = 1; // 指令类型 [cite: 1040]
+    // command_id 枚举值: 1:免费呼叫, 2:花费金币呼叫, 3:中断
+    uint32 command_id = 1; // 指令类型
 }
 
 // -------------------------------------------------------------------------
@@ -91,254 +91,254 @@ message AirSupportCommand {
 package rm_client_down;
 
 // 2.2.2 GameStatus
-// 用途: 同步比赛全局状态信息 (频率: 5Hz) [cite: 557, 583]
+// 用途: 同步比赛全局状态信息 (频率: 5Hz)
 message GameStatus {
-    // current_stage 枚举值: 0:未开始比赛, 1:准备阶段, 2:十五秒裁判系统自检阶段, 3:五秒倒计时, 4:比赛中, 5:比赛结算中 [cite: 590-598]
-    uint32 current_round = 1; // 当前局号(从1开始) [cite: 585]
-    uint32 total_rounds = 2; // 总局数 [cite: 585]
-    uint32 red_score = 3; // 红方得分 [cite: 585]
-    uint32 blue_score = 4; // 蓝方得分 [cite: 585]
-    uint32 current_stage = 5; // 当前阶段 [cite: 585]
-    int32 stage_countdown_sec = 6; // 当前阶段剩余时间 [cite: 585]
-    int32 stage_elapsed_sec = 7; // 当前阶段已过时间(秒) [cite: 585]
-    bool is_paused = 8; // 是否暂停 [cite: 589]
+    // current_stage 枚举值: 0:未开始比赛, 1:准备阶段, 2:十五秒裁判系统自检阶段, 3:五秒倒计时, 4:比赛中, 5:比赛结算中
+    uint32 current_round = 1; // 当前局号(从1开始)
+    uint32 total_rounds = 2; // 总局数
+    uint32 red_score = 3; // 红方得分
+    uint32 blue_score = 4; // 蓝方得分
+    uint32 current_stage = 5; // 当前阶段
+    int32 stage_countdown_sec = 6; // 当前阶段剩余时间
+    int32 stage_elapsed_sec = 7; // 当前阶段已过时间(秒)
+    bool is_paused = 8; // 是否暂停
 }
 
 // 2.2.3 GlobalUnitStatus
-// 用途: 同步基地、前哨站和所有机器人状态 (频率: 1Hz) [cite: 557, 609]
+// 用途: 同步基地、前哨站和所有机器人状态 (频率: 1Hz)
 message GlobalUnitStatus {
-    // base_status 枚举值: 0:无敌, 1:解除无敌,护甲未展开, 2:解除无敌,护甲展开 [cite: 616-620]
-    // outpost_status 枚举值: 0:无敌, 1:存活,解除无敌,中部装甲旋转, 2:存活,解除无敌,中部装甲停转, 3:被击毁,不可重建, 4:被击毁,可重建 [cite: 621-627]
-    uint32 base_health = 1; // 基地当前血量(0=已摧毀) [cite: 611]
-    uint32 base_status = 2; // 基地状态 [cite: 611]
-    uint32 base_shield = 3; // 基地当前护盾值(0=无护盾) [cite: 611]
-    uint32 outpost_health = 4; // 前哨站当前血量(0=已摧毁) [cite: 615]
-    uint32 outpost_status = 5; // 前哨站状态 [cite: 615]
-    repeated uint32 robot_health = 6; // 所有机器人血量(先己方后对方) [cite: 615]
-    repeated int32 robot_bullets = 7; // 己方机器人剩余累计发弹量 [cite: 615]
-    uint32 total_damage_red = 8; // 己方累计总伤害 [cite: 615]
-    uint32 total_damage_blue = 9; // 对方累计总伤害 [cite: 615]
+    // base_status 枚举值: 0:无敌, 1:解除无敌,护甲未展开, 2:解除无敌,护甲展开
+    // outpost_status 枚举值: 0:无敌, 1:存活,解除无敌,中部装甲旋转, 2:存活,解除无敌,中部装甲停转, 3:被击毁,不可重建, 4:被击毁,可重建
+    uint32 base_health = 1; // 基地当前血量(0=已摧毀)
+    uint32 base_status = 2; // 基地状态
+    uint32 base_shield = 3; // 基地当前护盾值(0=无护盾)
+    uint32 outpost_health = 4; // 前哨站当前血量(0=已摧毁)
+    uint32 outpost_status = 5; // 前哨站状态
+    repeated uint32 robot_health = 6; // 所有机器人血量(先己方后对方)
+    repeated int32 robot_bullets = 7; // 己方机器人剩余累计发弹量
+    uint32 total_damage_red = 8; // 己方累计总伤害
+    uint32 total_damage_blue = 9; // 对方累计总伤害
 }
 
 // 2.2.4 GlobalLogisticsStatus
-// 用途: 同步全局后勤信息 (频率: 1Hz) [cite: 557, 641]
+// 用途: 同步全局后勤信息 (频率: 1Hz)
 message GlobalLogisticsStatus {
-    uint32 remaining_economy = 1; // 己方当前经济 [cite: 643]
-    uint64 total_economy_obtained = 2; // 己方累计总经济 [cite: 643]
-    uint32 tech_level = 3; // 己方科技等级(工程机器人曾装配最高难度) [cite: 643]
-    uint32 encryption_level = 4; // 己方加密等级(雷达解析信息波机制) [cite: 643]
+    uint32 remaining_economy = 1; // 己方当前经济
+    uint64 total_economy_obtained = 2; // 己方累计总经济
+    uint32 tech_level = 3; // 己方科技等级(工程机器人曾装配最高难度)
+    uint32 encryption_level = 4; // 己方加密等级(雷达解析信息波机制)
 }
 
 // 2.2.5 GlobalSpecialMechanism
-// 用途: 同步正在生效的全局特殊机制 (频率: 1Hz) [cite: 557, 650]
+// 用途: 同步正在生效的全局特殊机制 (频率: 1Hz)
 message GlobalSpecialMechanism {
-    // mechanism_id 枚举值: 1:己方堡垒被对方占领计时, 2:对方堡垒被己方占领计时 [cite: 655-657]
-    repeated uint32 mechanism_id = 1; // 正在生效的机制 ID 列表 [cite: 652]
-    repeated int32 mechanism_time_sec = 2; // 对应的时间参数(秒) [cite: 652]
+    // mechanism_id 枚举值: 1:己方堡垒被对方占领计时, 2:对方堡垒被己方占领计时
+    repeated uint32 mechanism_id = 1; // 正在生效的机制 ID 列表
+    repeated int32 mechanism_time_sec = 2; // 对应的时间参数(秒)
 }
 
 // 2.2.6 Event
-// 用途: 全局事件通知 (频率: 触发式发送) [cite: 561, 662]
+// 用途: 全局事件通知 (频率: 触发式发送)
 message Event {
-    // event_id 枚举值: 1:击杀事件, ... 18:双方基地护甲展开 [cite: 665-688]
-    int32 event_id = 1; // 事件编号 [cite: 664]
-    string param = 2; // 事件参数(含义随 event_id变化) [cite: 664]
+    // event_id 枚举值: 1:击杀事件, ... 18:双方基地护甲展开
+    int32 event_id = 1; // 事件编号
+    string param = 2; // 事件参数(含义随 event_id变化)
 }
 
 // 2.2.7 RobotInjuryStat
-// 用途: 机器人一次存活期间累计受伤统计 (频率: 1Hz) [cite: 561, 693]
+// 用途: 机器人一次存活期间累计受伤统计 (频率: 1Hz)
 message RobotInjuryStat {
-    uint32 total_damage = 1; // 该次存活累计受伤总计 [cite: 695]
-    uint32 collision_damage = 2; // 撞击伤害 [cite: 695]
-    uint32 small_projectile_damage = 3; // 17mm 弹丸伤害 [cite: 695]
-    uint32 large_projectile_damage = 4; // 42mm 弹丸伤害 [cite: 695]
-    uint32 dart_splash_damage = 5; // 飞镖溅射伤害 [cite: 695]
-    uint32 module_offline_damage = 6; // 模块离线扣血 [cite: 695]
-    uint32 wifi_offline_damage = 7; // WiFi 离线扣血 [cite: 695]
-    uint32 penalty_damage = 8; // 判罚扣血 [cite: 695]
-    uint32 server_kill_damage = 9; // 服务器强制使其战亡扣血 [cite: 695]
-    uint32 killer_id = 10; // 击杀者ID(若未检测到击杀者,值为0) [cite: 695]
+    uint32 total_damage = 1; // 该次存活累计受伤总计
+    uint32 collision_damage = 2; // 撞击伤害
+    uint32 small_projectile_damage = 3; // 17mm 弹丸伤害
+    uint32 large_projectile_damage = 4; // 42mm 弹丸伤害
+    uint32 dart_splash_damage = 5; // 飞镖溅射伤害
+    uint32 module_offline_damage = 6; // 模块离线扣血
+    uint32 wifi_offline_damage = 7; // WiFi 离线扣血
+    uint32 penalty_damage = 8; // 判罚扣血
+    uint32 server_kill_damage = 9; // 服务器强制使其战亡扣血
+    uint32 killer_id = 10; // 击杀者ID(若未检测到击杀者,值为0)
 }
 
 // 2.2.8 RobotRespawnStatus
-// 用途: 机器人复活状态同步 (频率: 1Hz) [cite: 561, 710]
+// 用途: 机器人复活状态同步 (频率: 1Hz)
 message RobotRespawnStatus {
-    bool is_pending_respawn = 1; // 是否处于待复活状态 [cite: 712]
-    uint32 total_respawn_progress = 2; // 复活所需总读条 [cite: 712]
-    uint32 current_respawn_progress = 3; // 当前复活读条进度 [cite: 712]
-    bool can_free_respawn = 4; // 是否可以免费复活 [cite: 712]
-    uint32 gold_cost_for_respawn = 5; // 花费金币复活所需金币数 [cite: 712]
-    bool can_pay_for_respawn = 6; // 是否允许花费金币复活 [cite: 712]
+    bool is_pending_respawn = 1; // 是否处于待复活状态
+    uint32 total_respawn_progress = 2; // 复活所需总读条
+    uint32 current_respawn_progress = 3; // 当前复活读条进度
+    bool can_free_respawn = 4; // 是否可以免费复活
+    uint32 gold_cost_for_respawn = 5; // 花费金币复活所需金币数
+    bool can_pay_for_respawn = 6; // 是否允许花费金币复活
 }
 
 // 2.2.9 RobotStaticStatus
-// 用途: 机器人固定属性和配置 (频率: 1Hz) [cite: 561, 724]
+// 用途: 机器人固定属性和配置 (频率: 1Hz)
 message RobotStaticStatus {
-    // 性能体系枚举值见文档 2.2.9 节 [cite: 727-739]
-    uint32 connection_state = 1; // 连接状态(0=未连接, 1=连接) [cite: 726]
-    uint32 field_state = 2; // 上场状态(0=已上场,1=未上场) [cite: 726]
-    uint32 alive_state = 3; // 存活状态(0=未知,1=存活,2=战亡) [cite: 726]
-    uint32 robot_id = 4; // 机器人编号 [cite: 726]
-    uint32 robot_type = 5; // 机器人类型 [cite: 726]
-    uint32 performance_system_shooter = 6; // 性能体系-发射机构 [cite: 726]
-    uint32 performance_system_chassis = 7; // 性能体系-底盘 [cite: 726]
-    uint32 level = 8; // 当前等级 [cite: 726]
-    uint32 max_health = 9; // 最大血量 [cite: 726]
-    uint32 max_heat = 10; // 最大热量 [cite: 726]
-    float heat_cooldown_rate = 11; // 热量冷却速率(每秒) [cite: 726]
-    uint32 max_power = 12; // 最大功率 [cite: 726]
-    uint32 max_buffer_energy = 13; // 最大缓冲能量 [cite: 726]
-    uint32 max_chassis_energy = 14; // 最大底盘能量 [cite: 726]
+    // 性能体系枚举值见文档 2.2.9 节
+    uint32 connection_state = 1; // 连接状态(0=未连接, 1=连接)
+    uint32 field_state = 2; // 上场状态(0=已上场,1=未上场)
+    uint32 alive_state = 3; // 存活状态(0=未知,1=存活,2=战亡)
+    uint32 robot_id = 4; // 机器人编号
+    uint32 robot_type = 5; // 机器人类型
+    uint32 performance_system_shooter = 6; // 性能体系-发射机构
+    uint32 performance_system_chassis = 7; // 性能体系-底盘
+    uint32 level = 8; // 当前等级
+    uint32 max_health = 9; // 最大血量
+    uint32 max_heat = 10; // 最大热量
+    float heat_cooldown_rate = 11; // 热量冷却速率(每秒)
+    uint32 max_power = 12; // 最大功率
+    uint32 max_buffer_energy = 13; // 最大缓冲能量
+    uint32 max_chassis_energy = 14; // 最大底盘能量
 }
 
 // 2.2.10 RobotDynamicStatus
-// 用途: 机器人实时数据 (频率: 10Hz) [cite: 561, 756]
+// 用途: 机器人实时数据 (频率: 10Hz)
 message RobotDynamicStatus {
-    uint32 current_health = 1; // 当前血量 [cite: 758]
-    float current_heat = 2; // 当前热量 [cite: 760]
-    float last_projectile_fire_rate = 3; // 上一次弹丸射速 [cite: 760]
-    uint32 current_chassis_energy = 4; // 当前剩余底盘能量 [cite: 760]
-    uint32 current_buffer_energy = 5; // 当前缓冲能量 [cite: 760]
-    uint32 current_experience = 6; // 当前经验值 [cite: 760]
-    uint32 experience_for_upgrade = 7; // 升级所需经验 [cite: 760]
-    uint32 total_projectiles_fired = 8; // 累计已发弹量 [cite: 760]
-    uint32 remaining_ammo = 9; // 剩余允许发弹量 [cite: 760]
-    bool is_out_of_combat = 10; // 是否处于脱战状态 [cite: 760]
-    uint32 out_of_combat_countdown = 11; // 脱战状态倒计时 [cite: 760]
-    bool can_remote_heal = 12; // 是否可以远程补血 [cite: 760]
-    bool can_remote_ammo = 13; // 是否可以远程补弹 [cite: 760]
+    uint32 current_health = 1; // 当前血量
+    float current_heat = 2; // 当前热量
+    float last_projectile_fire_rate = 3; // 上一次弹丸射速
+    uint32 current_chassis_energy = 4; // 当前剩余底盘能量
+    uint32 current_buffer_energy = 5; // 当前缓冲能量
+    uint32 current_experience = 6; // 当前经验值
+    uint32 experience_for_upgrade = 7; // 升级所需经验
+    uint32 total_projectiles_fired = 8; // 累计已发弹量
+    uint32 remaining_ammo = 9; // 剩余允许发弹量
+    bool is_out_of_combat = 10; // 是否处于脱战状态
+    uint32 out_of_combat_countdown = 11; // 脱战状态倒计时
+    bool can_remote_heal = 12; // 是否可以远程补血
+    bool can_remote_ammo = 13; // 是否可以远程补弹
 }
 
 // 2.2.11 RobotModuleStatus
-// 用途: 机器人各模块运行状态 (频率: 1Hz) [cite: 561, 779]
+// 用途: 机器人各模块运行状态 (频率: 1Hz)
 message RobotModuleStatus {
-    // 状态枚举值: 0=离线, 1=在线 [cite: 781]
-    uint32 power_manager = 1; // 电源管理模块状态 [cite: 781]
-    uint32 rfid = 2; // RFID 模块状态 [cite: 781]
-    uint32 light_strip = 3; // 灯条模块状态 [cite: 781]
-    uint32 small_shooter = 4; // 17mm 发射机构状态 [cite: 781]
-    uint32 big_shooter = 5; // 42mm 发射机构状态 [cite: 781]
-    uint32 uwb = 6; // 定位模块状态 [cite: 781]
-    uint32 armor = 7; // 装甲模块状态 [cite: 781]
-    uint32 video_transmission = 8; // 图传模块状态 [cite: 781]
-    uint32 capacitor = 9; // 电容模块状态 [cite: 781]
-    uint32 main_controller = 10; // 主控状态 [cite: 781]
+    // 状态枚举值: 0=离线, 1=在线
+    uint32 power_manager = 1; // 电源管理模块状态
+    uint32 rfid = 2; // RFID 模块状态
+    uint32 light_strip = 3; // 灯条模块状态
+    uint32 small_shooter = 4; // 17mm 发射机构状态
+    uint32 big_shooter = 5; // 42mm 发射机构状态
+    uint32 uwb = 6; // 定位模块状态
+    uint32 armor = 7; // 装甲模块状态
+    uint32 video_transmission = 8; // 图传模块状态
+    uint32 capacitor = 9; // 电容模块状态
+    uint32 main_controller = 10; // 主控状态
 }
 
 // 2.2.12 RobotPosition
-// 用途: 机器人空间坐标和朝向 (频率: 1Hz) [cite: 561, 795]
+// 用途: 机器人空间坐标和朝向 (频率: 1Hz)
 message RobotPosition {
-    float x = 1; // 世界坐标轴 X [cite: 798]
-    float y = 2; // 世界坐标轴 Y [cite: 798]
-    float z = 3; // 世界坐标Z轴 [cite: 798]
-    float yaw = 4; // 本机器人测速模块的朝向,单位:度,正北为0度 [cite: 798]
+    float x = 1; // 世界坐标轴 X
+    float y = 2; // 世界坐标轴 Y
+    float z = 3; // 世界坐标Z轴
+    float yaw = 4; // 本机器人测速模块的朝向,单位:度,正北为0度
 }
 
 // 2.2.13 Buff
-// 用途: Buff 效果信息 (频率: 获得增益时触发发送, 此后 1Hz 定频发送直到失去增益) [cite: 561, 805]
+// 用途: Buff 效果信息 (频率: 获得增益时触发发送, 此后 1Hz 定频发送直到失去增益)
 message Buff {
-    // buff 类型枚举值: 1:攻击增益, ... 7:地形跨越增益(预备) [cite: 811-823]
-    uint32 robot_id = 1; // 机器人 ID [cite: 807]
-    uint32 buff_type = 2; // Buff 类型 [cite: 807]
-    int32 buff_level = 3; // Buff 增益值 [cite: 807]
-    uint32 buff_max_time = 4; // Buff 最大剩余时间 [cite: 810]
-    uint32 buff_left_time = 5; // Buff 剩余时间 [cite: 810]
-    string msg_params = 6; // 额外文字参数 [cite: 810]
+    // buff 类型枚举值: 1:攻击增益, ... 7:地形跨越增益(预备)
+    uint32 robot_id = 1; // 机器人 ID
+    uint32 buff_type = 2; // Buff 类型
+    int32 buff_level = 3; // Buff 增益值
+    uint32 buff_max_time = 4; // Buff 最大剩余时间
+    uint32 buff_left_time = 5; // Buff 剩余时间
+    string msg_params = 6; // 额外文字参数
 }
 
 // 2.2.14 PenaltyInfo
-// 用途: 判罚信息同步 (频率: 触发式发送) [cite: 561, 832]
+// 用途: 判罚信息同步 (频率: 触发式发送)
 message PenaltyInfo {
-    // penalty_type 枚举值: 1:黄牌, 2:双方黄牌, 3:红牌, 4:超功率, 5:超热量, 6:超射速 [cite: 838-844]
-    uint32 penalty_type = 1; // 当前受罚类型 [cite: 834]
-    uint32 penalty_effect_sec = 2; // 当前受罚效果时长(秒) [cite: 837]
-    uint32 total_penalty_num = 3; // 当前判罚数量 [cite: 837]
+    // penalty_type 枚举值: 1:黄牌, 2:双方黄牌, 3:红牌, 4:超功率, 5:超热量, 6:超射速
+    uint32 penalty_type = 1; // 当前受罚类型
+    uint32 penalty_effect_sec = 2; // 当前受罚效果时长(秒)
+    uint32 total_penalty_num = 3; // 当前判罚数量
 }
 
 // 2.2.15 RobotPathPlanInfo
-// 用途: 哨兵轨迹规划信息 (频率: 1Hz) [cite: 561, 850]
+// 用途: 哨兵轨迹规划信息 (频率: 1Hz)
 message RobotPathPlanInfo {
-    uint32 intention = 1; // 哨兵意图(1=攻击,2=防守,3=移动) [cite: 852]
-    uint32 start_pos_x = 2; // 起始点 X 坐标(分米) [cite: 852]
-    uint32 start_pos_y = 3; // 起始点 Y 坐标(分米) [cite: 852]
-    repeated int32 offset_x = 4 [packed = true]; // 相对起始点 X 增量数组(-128~+127,长度49) [cite: 852]
-    repeated int32 offset_y = 5 [packed = true]; // 相对起始点 Y 增量数组(-128~+127,长度49) [cite: 852]
-    uint32 sender_id = 6; // 发送者 ID [cite: 852]
+    uint32 intention = 1; // 哨兵意图(1=攻击,2=防守,3=移动)
+    uint32 start_pos_x = 2; // 起始点 X 坐标(分米)
+    uint32 start_pos_y = 3; // 起始点 Y 坐标(分米)
+    repeated int32 offset_x = 4 [packed = true]; // 相对起始点 X 增量数组(-128~+127,长度49)
+    repeated int32 offset_y = 5 [packed = true]; // 相对起始点 Y 增量数组(-128~+127,长度49)
+    uint32 sender_id = 6; // 发送者 ID
 }
 
 // 2.2.17 RaderInfoToClient
-// 用途: 雷达发送的机器人位置信息 (频率: 1Hz) [cite: 561, 881]
+// 用途: 雷达发送的机器人位置信息 (频率: 1Hz)
 message RaderInfoToClient {
-    uint32 target_robot_id = 1; // 目标机器人 ID [cite: 883]
-    float target_pos_x = 2; // 目标位置 X(米) [cite: 883]
-    float target_pos_y = 3; // 目标位置 Y(米) [cite: 883]
-    float torward_angle = 4; // 朝向角度 [cite: 883]
-    uint32 is_high_light = 5; // 是否特殊标识(0=否,1=是) [cite: 883]
+    uint32 target_robot_id = 1; // 目标机器人 ID
+    float target_pos_x = 2; // 目标位置 X(米)
+    float target_pos_y = 3; // 目标位置 Y(米)
+    float torward_angle = 4; // 朝向角度
+    uint32 is_high_light = 5; // 是否特殊标识(0=否,1=是)
 }
 
 // 2.2.18 CustomByteBlock
-// 用途: 机器人自定义上传数据流 (机器人端对应0x0310) (频率: 50Hz) [cite: 561, 894]
+// 用途: 机器人自定义上传数据流 (机器人端对应0x0310) (频率: 50Hz)
 message CustomByteBlock {
-    bytes data = 1; // 最大为1.2 kbit的自定义数据包 [cite: 896]
+    bytes data = 1; // 最大为1.2 kbit的自定义数据包
 }
 
 // 2.2.20 TechCoreMotionStateSync
-// 用途: 科技核心运动状态同步 (频率: 1Hz) [cite: 561, 909]
+// 用途: 科技核心运动状态同步 (频率: 1Hz)
 message TechCoreMotionStateSync {
-    // status 枚举值: 1:未进入装配状态, ... 6:已确认装配,科技核心移动中 [cite: 912-921]
-    uint32 maximum_difficulty_level = 1; // 当前可选择的最高装配难度等级 [cite: 911]
-    uint32 status = 2; // 科技核心状态 [cite: 911]
+    // status 枚举值: 1:未进入装配状态, ... 6:已确认装配,科技核心移动中
+    uint32 maximum_difficulty_level = 1; // 当前可选择的最高装配难度等级
+    uint32 status = 2; // 科技核心状态
 }
 
 // 2.2.22 RobotPerformanceSelectionSync
-// 用途: 步兵/英雄性能体系状态同步 (频率: 1Hz) [cite: 562, 937]
+// 用途: 步兵/英雄性能体系状态同步 (频率: 1Hz)
 message RobotPerformanceSelectionSync {
-    uint32 shooter = 1; // 发射机构性能体系 [cite: 939]
-    uint32 chassis = 2; // 底盘性能体系 [cite: 939]
+    uint32 shooter = 1; // 发射机构性能体系
+    uint32 chassis = 2; // 底盘性能体系
 }
 
 // 2.2.24 DeployModeStatusSync
-// 用途: 英雄部署模式状态同步 (频率: 1Hz) [cite: 564, 950]
+// 用途: 英雄部署模式状态同步 (频率: 1Hz)
 message DeployModeStatusSync {
-    uint32 status = 1; // 当前部署模式状态(0为未部署,1为已部署) [cite: 954]
+    uint32 status = 1; // 当前部署模式状态(0为未部署,1为已部署)
 }
 
 // 2.2.26 RuneStatusSync
-// 用途: 能量机关状态同步 (频率: 1Hz) [cite: 564, 964]
+// 用途: 能量机关状态同步 (频率: 1Hz)
 message RuneStatusSync {
-    // rune_status 枚举值: 1:未激活, 2:正在激活, 3:已激活 [cite: 970-972]
-    uint32 rune_status = 1; // 当前能量机关状态枚举 [cite: 966]
-    uint32 activated_arms = 2; // 当前已激活的灯臂数量 [cite: 966]
-    uint32 average_rings = 3; // 总环数 [cite: 966]
+    // rune_status 枚举值: 1:未激活, 2:正在激活, 3:已激活
+    uint32 rune_status = 1; // 当前能量机关状态枚举
+    uint32 activated_arms = 2; // 当前已激活的灯臂数量
+    uint32 average_rings = 3; // 总环数
 }
 
 // 2.2.27 SentinelStatusSync
-// 用途: 哨兵姿态和弱化状态 (频率: 1Hz) [cite: 564, 978]
+// 用途: 哨兵姿态和弱化状态 (频率: 1Hz)
 message SentinelStatusSync {
-    uint32 posture_id = 1; // 姿态ID(1为进攻姿态,2为防御姿态,3为移动姿态) [cite: 980]
-    bool is_weakened = 2; // 是否弱化 [cite: 980]
+    uint32 posture_id = 1; // 姿态ID(1为进攻姿态,2为防御姿态,3为移动姿态)
+    bool is_weakened = 2; // 是否弱化
 }
 
 // 2.2.29 DartSelectTargetStatusSync
-// 用途: 飞镖目标选择状态同步 (频率: 1Hz) [cite: 564, 994]
+// 用途: 飞镖目标选择状态同步 (频率: 1Hz)
 message DartSelectTargetStatusSync {
-    uint32 target_id = 1; // 目标 ID [cite: 996]
-    bool open = 2; // 闸门状态 [cite: 996]
+    uint32 target_id = 1; // 目标 ID
+    bool open = 2; // 闸门状态
 }
 
 // 2.2.31 GuardCtrlResult
-// 用途: 哨兵控制指令结果反馈 (频率: 1Hz) [cite: 564, 1027]
+// 用途: 哨兵控制指令结果反馈 (频率: 1Hz)
 message GuardCtrlResult {
-    // result_code 枚举值: 0:成功, 其他:失败 [cite: 1030-1033]
-    uint32 command_id = 1; // 对应的指令编号 [cite: 1029]
-    uint32 result_code = 2; // 执行结果码 [cite: 1029]
+    // result_code 枚举值: 0:成功, 其他:失败
+    uint32 command_id = 1; // 对应的指令编号
+    uint32 result_code = 2; // 执行结果码
 }
 
 // 2.2.33 AirSupportStatusSync
-// 用途: 空中支援状态反馈 (频率: 1Hz) [cite: 564, 1049]
+// 用途: 空中支援状态反馈 (频率: 1Hz)
 message AirSupportStatusSync {
-    // airsupport_status 枚举值: 0:未进行空中支援, 1:正在空中支援, 2:空中支援被对方锁定而无法开启 [cite: 1057-1061]
-    uint32 airsupport_status = 1; // 空中支援状态 [cite: 1051]
-    uint32 left_time = 2; // 免费空中支援剩余时间 [cite: 1056]
-    uint32 cost_coins = 3; // 付费空中支援已花费金币 [cite: 1056]
+    // airsupport_status 枚举值: 0:未进行空中支援, 1:正在空中支援, 2:空中支援被对方锁定而无法开启
+    uint32 airsupport_status = 1; // 空中支援状态
+    uint32 left_time = 2; // 免费空中支援剩余时间
+    uint32 cost_coins = 3; // 付费空中支援已花费金币
 }

@@ -7,6 +7,7 @@ echo.
 
 echo 🔌 正在连接到 MQTT 服务器...
 echo.
-node mqtt-server.js
+cd ..
+node js\mqtt-server.js
 
 pause
