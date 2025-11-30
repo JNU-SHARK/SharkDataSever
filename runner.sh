@@ -21,7 +21,11 @@ show_banner() {
 check_node() {
     echo -e "${YELLOW}[1/3] 检查 Node.js 环境...${NC}"
     
-    if ! command -v node &> /dev/null; then
+    if command -v node >/dev/null 2>&1; then
+        NODE_CMD=node
+    elif command -v nodejs >/dev/null 2>&1; then
+        NODE_CMD=nodejs
+    else
         echo -e "${RED}❌ 错误: 未检测到 Node.js${NC}"
         echo ""
         echo "请先安装 Node.js:"
