@@ -1,6 +1,6 @@
 {
   "name": "shark-data-server",
-  "version": "2.0.0",
+  "version": "2.0.0-Visual",
   "description": "UDP视频流和MQTT数据发送模拟服务器",
   "main": "js/UDPserver.js",
   "scripts": {
@@ -18,7 +18,7 @@
     "hevc",
     "robomaster"
   ],
-  "author": "",
+  "author": "MeroT",
   "license": "ISC",
   "dependencies": {
     "aedes": "^0.50.0",
