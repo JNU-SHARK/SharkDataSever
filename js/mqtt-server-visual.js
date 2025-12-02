@@ -520,6 +520,7 @@ class VisualMQTTServer {
             res.setHeader('Access-Control-Allow-Origin', '*');
             res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
             res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+            res.setHeader('X-Content-Type-Options', 'nosniff');
             
             if (req.method === 'OPTIONS') {
                 res.writeHead(200);
@@ -540,6 +541,60 @@ class VisualMQTTServer {
                 this.handlePublish(req, res);
             } else if (url.pathname === '/api/auto-publish' && req.method === 'POST') {
                 this.handleAutoPublish(req, res);
+            } else if (url.pathname === '/api/save-proto' && req.method === 'POST') {
+                this.handleSaveProto(req, res);
+            } else if (url.pathname === '/api/save-c' && req.method === 'POST') {
+                this.handleSaveC(req, res);
+            } else if (url.pathname === '/api/save-config' && req.method === 'POST') {
+                this.handleSaveConfig(req, res);
+            } else if (url.pathname === '/api/list-configs' && req.method === 'GET') {
+                this.handleListConfigs(req, res);
+            } else if (url.pathname === '/api/load-config' && req.method === 'GET') {
+                this.handleLoadConfig(req, res);
+            } else if (url.pathname === '/api/delete-config' && req.method === 'POST') {
+                this.handleDeleteConfig(req, res);
+            } else if (url.pathname === '/api/load-proto' && req.method === 'GET') {
+                this.handleLoadProto(req, res);
+            } else if (url.pathname === '/lib/vue.global.prod.js') {
+                const filePath = path.join(__dirname, 'lib', 'vue.global.prod.js');
+                fs.readFile(filePath, (err, content) => {
+                    if (err) {
+                        res.writeHead(500);
+                        res.end('Error loading Vue.js');
+                    } else {
+                        res.writeHead(200, { 'Content-Type': 'application/javascript' });
+                        res.end(content);
+                    }
+                });
+            } else if (url.pathname.startsWith('/js/')) {
+                // Serve compiled JS files
+                const filePath = path.join(__dirname, '..', 'frontend', 'public', url.pathname);
+                fs.readFile(filePath, (err, content) => {
+                    if (err) {
+                        console.error(`File not found: ${filePath}`);
+                        res.writeHead(404);
+                        res.end('Not Found');
+                    } else {
+                        res.writeHead(200, { 'Content-Type': 'application/javascript' });
+                        res.end(content);
+                    }
+                });
+            } else if (url.pathname.startsWith('/css/')) {
+                // Serve CSS files
+                const filePath = path.join(__dirname, '..', 'frontend', 'public', url.pathname);
+                fs.readFile(filePath, (err, content) => {
+                    if (err) {
+                        console.error(`File not found: ${filePath}`);
+                        res.writeHead(404);
+                        res.end('Not Found');
+                    } else {
+                        res.writeHead(200, { 'Content-Type': 'text/css' });
+                        res.end(content);
+                    }
+                });
+            } else if (url.pathname === '/favicon.ico') {
+                res.writeHead(204);
+                res.end();
             } else {
                 res.writeHead(404);
                 res.end('Not Found');
@@ -672,6 +727,628 @@ class VisualMQTTServer {
             } catch (error) {
                 res.writeHead(500, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ error: error.message }));
+            }
+        });
+    }
+
+    handleSaveProto(req, res) {
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', () => {
+            try {
+                const { content, configName } = JSON.parse(body);
+                
+                if (!content) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'content is required' }));
+                    return;
+                }
+                
+                const fs = require('fs');
+                const path = require('path');
+                
+                // 根据配置名称创建文件夹
+                let dir, relativePath;
+                if (configName) {
+                    const safeName = configName.replace(/[<>:"/\\|?*]/g, '_');
+                    dir = path.join(__dirname, '..', 'sdk', safeName);
+                    relativePath = `sdk/${safeName}`;
+                } else {
+                    dir = path.join(__dirname, '..', 'sdk', 'default');
+                    relativePath = 'sdk/default';
+                }
+                
+                const filePath = path.join(dir, 'custom_data.proto');
+                
+                // 创建目录
+                if (!fs.existsSync(dir)) {
+                    fs.mkdirSync(dir, { recursive: true });
+                }
+                
+                // 写入文件
+                fs.writeFileSync(filePath, content, 'utf8');
+                
+                console.log(`📝 已保存 Proto 文件 [${configName || '默认'}]: ${filePath}`);
+                
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ 
+                    success: true, 
+                    path: `${relativePath}/custom_data.proto`
+                }));
+                
+            } catch (error) {
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: error.message }));
+            }
+        });
+    }
+
+    handleSaveC(req, res) {
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', () => {
+            try {
+                const { hContent, cContent, configName } = JSON.parse(body);
+                
+                if (!hContent || !cContent) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'hContent and cContent are required' }));
+                    return;
+                }
+                
+                const fs = require('fs');
+                const path = require('path');
+                
+                // 根据配置名称创建文件夹
+                let dir;
+                let relativePath;
+                if (configName) {
+                    // 清理配置名称，移除非法文件名字符
+                    const safeName = configName.replace(/[<>:"/\\|?*]/g, '_');
+                    dir = path.join(__dirname, '..', 'sdk', safeName);
+                    relativePath = `sdk/${safeName}`;
+                } else {
+                    dir = path.join(__dirname, '..', 'sdk', 'default');
+                    relativePath = 'sdk/default';
+                }
+                
+                const hFilePath = path.join(dir, 'custom_data.h');
+                const cFilePath = path.join(dir, 'custom_data.c');
+                
+                // 创建目录
+                if (!fs.existsSync(dir)) {
+                    fs.mkdirSync(dir, { recursive: true });
+                }
+                
+                // 写入 .h 文件
+                fs.writeFileSync(hFilePath, hContent, 'utf8');
+                
+                // 写入 .c 文件
+                fs.writeFileSync(cFilePath, cContent, 'utf8');
+                
+                console.log(`📝 已保存 C SDK 文件 [${configName || '默认'}]:`);
+                console.log(`   - ${hFilePath}`);
+                console.log(`   - ${cFilePath}`);
+                
+                // 使用 Web 方案进行语法检查
+                const syntaxCheck = this.checkCSyntax(hContent, cContent);
+                
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ 
+                    success: true, 
+                    hPath: `${relativePath}/custom_data.h`,
+                    cPath: `${relativePath}/custom_data.c`,
+                    syntaxCheck: syntaxCheck
+                }));
+                
+            } catch (error) {
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: error.message }));
+            }
+        });
+    }
+
+    handleSaveConfig(req, res) {
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', () => {
+            try {
+                const { name, description, items, totalSize } = JSON.parse(body);
+                
+                if (!name || !items || items.length === 0) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'name and items are required' }));
+                    return;
+                }
+                
+                const fs = require('fs');
+                const path = require('path');
+                const dir = path.join(__dirname, '..', 'sdk', 'configs');
+                
+                // 创建目录
+                if (!fs.existsSync(dir)) {
+                    fs.mkdirSync(dir, { recursive: true });
+                }
+                
+                // 生成XML内容
+                const timestamp = new Date().toISOString();
+                let xmlContent = '<?xml version="1.0" encoding="UTF-8"?>\n';
+                xmlContent += '<CustomDataBlockConfig>\n';
+                xmlContent += `  <Metadata>\n`;
+                xmlContent += `    <Name>${this.escapeXml(name)}</Name>\n`;
+                xmlContent += `    <Description>${this.escapeXml(description || '')}</Description>\n`;
+                xmlContent += `    <CreatedAt>${timestamp}</CreatedAt>\n`;
+                xmlContent += `    <TotalSize unit="bytes">${totalSize}</TotalSize>\n`;
+                xmlContent += `  </Metadata>\n`;
+                xmlContent += `  <Fields count="${items.length}">\n`;
+                
+                items.forEach((item, index) => {
+                    xmlContent += `    <Field index="${index + 1}">\n`;
+                    xmlContent += `      <Name>${this.escapeXml(item.name)}</Name>\n`;
+                    xmlContent += `      <Type>${this.escapeXml(item.type)}</Type>\n`;
+                    xmlContent += `      <Size unit="bytes">${this.getTypeSize(item.type)}</Size>\n`;
+                    if (item.min !== undefined || item.max !== undefined) {
+                        xmlContent += `      <Range>\n`;
+                        xmlContent += `        <Min>${item.min !== undefined ? item.min : 'null'}</Min>\n`;
+                        xmlContent += `        <Max>${item.max !== undefined ? item.max : 'null'}</Max>\n`;
+                        xmlContent += `      </Range>\n`;
+                    }
+                    xmlContent += `    </Field>\n`;
+                });
+                
+                xmlContent += `  </Fields>\n`;
+                xmlContent += '</CustomDataBlockConfig>\n';
+                
+                // 保存文件
+                const fileName = `${name}.xml`;
+                const filePath = path.join(dir, fileName);
+                fs.writeFileSync(filePath, xmlContent, 'utf8');
+                
+                console.log(`📝 已保存配置: ${filePath}`);
+                
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ 
+                    success: true, 
+                    path: `sdk/configs/${fileName}`
+                }));
+                
+            } catch (error) {
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: error.message }));
+            }
+        });
+    }
+
+    handleListConfigs(req, res) {
+        try {
+            const fs = require('fs');
+            const path = require('path');
+            const dir = path.join(__dirname, '..', 'sdk', 'configs');
+            
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir, { recursive: true });
+            }
+            
+            const files = fs.readdirSync(dir).filter(f => f.endsWith('.xml'));
+            const configs = [];
+            
+            files.forEach(file => {
+                try {
+                    const filePath = path.join(dir, file);
+                    const content = fs.readFileSync(filePath, 'utf8');
+                    
+                    // 简单解析XML获取元数据
+                    const nameMatch = content.match(/<Name>(.*?)<\/Name>/);
+                    const descMatch = content.match(/<Description>(.*?)<\/Description>/);
+                    const sizeMatch = content.match(/<TotalSize[^>]*>(\d+)<\/TotalSize>/);
+                    const timeMatch = content.match(/<CreatedAt>(.*?)<\/CreatedAt>/);
+                    
+                    if (nameMatch) {
+                        configs.push({
+                            name: nameMatch[1],
+                            description: descMatch ? descMatch[1] : '',
+                            totalSize: sizeMatch ? parseInt(sizeMatch[1]) : 0,
+                            createdAt: timeMatch ? new Date(timeMatch[1]).toLocaleString('zh-CN') : ''
+                        });
+                    }
+                } catch (err) {
+                    console.error(`解析配置文件 ${file} 失败:`, err.message);
+                }
+            });
+            
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true, configs }));
+            
+        } catch (error) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: error.message }));
+        }
+    }
+
+    handleLoadConfig(req, res) {
+        try {
+            const url = require('url');
+            const queryParams = url.parse(req.url, true).query;
+            const name = queryParams.name;
+            
+            if (!name) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'name is required' }));
+                return;
+            }
+            
+            const fs = require('fs');
+            const path = require('path');
+            const filePath = path.join(__dirname, '..', 'sdk', 'configs', `${name}.xml`);
+            
+            if (!fs.existsSync(filePath)) {
+                res.writeHead(404, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: '配置不存在' }));
+                return;
+            }
+            
+            const content = fs.readFileSync(filePath, 'utf8');
+            
+            // 解析XML
+            const nameMatch = content.match(/<Name>(.*?)<\/Name>/);
+            const descMatch = content.match(/<Description>(.*?)<\/Description>/);
+            const fieldMatches = [...content.matchAll(/<Field[^>]*>([\s\S]*?)<\/Field>/g)];
+            
+            const items = fieldMatches.map(match => {
+                const fieldContent = match[1];
+                const itemName = fieldContent.match(/<Name>(.*?)<\/Name>/)?.[1] || '';
+                const itemType = fieldContent.match(/<Type>(.*?)<\/Type>/)?.[1] || '';
+                const minMatch = fieldContent.match(/<Min>(.*?)<\/Min>/);
+                const maxMatch = fieldContent.match(/<Max>(.*?)<\/Max>/);
+                
+                const item = { name: itemName, type: itemType };
+                if (minMatch && minMatch[1] !== 'null') item.min = parseFloat(minMatch[1]);
+                if (maxMatch && maxMatch[1] !== 'null') item.max = parseFloat(maxMatch[1]);
+                
+                return item;
+            });
+            
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ 
+                success: true, 
+                config: {
+                    name: nameMatch ? nameMatch[1] : name,
+                    description: descMatch ? descMatch[1] : '',
+                    items
+                }
+            }));
+            
+        } catch (error) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: error.message }));
+        }
+    }
+
+    handleDeleteConfig(req, res) {
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', () => {
+            try {
+                const { name } = JSON.parse(body);
+                
+                if (!name) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'name is required' }));
+                    return;
+                }
+                
+                const fs = require('fs');
+                const path = require('path');
+                const filePath = path.join(__dirname, '..', 'sdk', 'configs', `${name}.xml`);
+                
+                if (!fs.existsSync(filePath)) {
+                    res.writeHead(404, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: '配置不存在' }));
+                    return;
+                }
+                
+                fs.unlinkSync(filePath);
+                console.log(`🗑️ 已删除配置: ${filePath}`);
+                
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: true }));
+                
+            } catch (error) {
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: error.message }));
+            }
+        });
+    }
+
+    handleLoadProto(req, res) {
+        try {
+            const url = new URL(req.url, `http://${req.headers.host}`);
+            const configName = url.searchParams.get('name');
+            
+            const fs = require('fs');
+            const path = require('path');
+            
+            let filePath;
+            if (configName) {
+                const safeName = configName.replace(/[<>:"/\\|?*]/g, '_');
+                filePath = path.join(__dirname, '..', 'sdk', safeName, 'custom_data.proto');
+            } else {
+                filePath = path.join(__dirname, '..', 'sdk', 'default', 'custom_data.proto');
+            }
+            
+            if (!fs.existsSync(filePath)) {
+                res.writeHead(404, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Proto文件不存在' }));
+                return;
+            }
+            
+            const content = fs.readFileSync(filePath, 'utf8');
+            
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ 
+                success: true, 
+                content: content,
+                path: filePath
+            }));
+            
+        } catch (error) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: error.message }));
+        }
+    }
+
+    handleSaveVersion(req, res) {
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', () => {
+            try {
+                const { version, description, items, totalSize } = JSON.parse(body);
+                
+                if (!version || !items || items.length === 0) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'version and items are required' }));
+                    return;
+                }
+                
+                const fs = require('fs');
+                const path = require('path');
+                const dir = path.join(__dirname, '..', 'sdk', 'versions');
+                
+                // 创建目录
+                if (!fs.existsSync(dir)) {
+                    fs.mkdirSync(dir, { recursive: true });
+                }
+                
+                // 生成XML内容
+                const timestamp = new Date().toISOString();
+                let xmlContent = '<?xml version="1.0" encoding="UTF-8"?>\n';
+                xmlContent += '<CustomDataBlockVersion>\n';
+                xmlContent += `  <Metadata>\n`;
+                xmlContent += `    <Version>${this.escapeXml(version)}</Version>\n`;
+                xmlContent += `    <Description>${this.escapeXml(description || '')}</Description>\n`;
+                xmlContent += `    <CreatedAt>${timestamp}</CreatedAt>\n`;
+                xmlContent += `    <TotalSize unit="bytes">${totalSize}</TotalSize>\n`;
+                xmlContent += `  </Metadata>\n`;
+                xmlContent += `  <Fields count="${items.length}">\n`;
+                
+                items.forEach((item, index) => {
+                    xmlContent += `    <Field index="${index + 1}">\n`;
+                    xmlContent += `      <Name>${this.escapeXml(item.name)}</Name>\n`;
+                    xmlContent += `      <Type>${this.escapeXml(item.type)}</Type>\n`;
+                    xmlContent += `      <Size unit="bytes">${this.getTypeSize(item.type)}</Size>\n`;
+                    if (item.min !== undefined || item.max !== undefined) {
+                        xmlContent += `      <Range>\n`;
+                        xmlContent += `        <Min>${item.min !== undefined ? item.min : 'null'}</Min>\n`;
+                        xmlContent += `        <Max>${item.max !== undefined ? item.max : 'null'}</Max>\n`;
+                        xmlContent += `      </Range>\n`;
+                    }
+                    xmlContent += `    </Field>\n`;
+                });
+                
+                xmlContent += `  </Fields>\n`;
+                xmlContent += '</CustomDataBlockVersion>\n';
+                
+                // 保存文件
+                const fileName = `custom_data_v${version.replace(/\./g, '_')}.xml`;
+                const filePath = path.join(dir, fileName);
+                fs.writeFileSync(filePath, xmlContent, 'utf8');
+                
+                console.log(`📝 已保存版本配置: ${filePath}`);
+                
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ 
+                    success: true, 
+                    path: `sdk/versions/${fileName}`
+                }));
+                
+            } catch (error) {
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: error.message }));
+            }
+        });
+    }
+
+    escapeXml(unsafe) {
+        if (unsafe === null || unsafe === undefined) return '';
+        return String(unsafe)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&apos;');
+    }
+
+    getTypeSize(type) {
+        const sizes = {
+            'uint8': 1, 'int8': 1, 'bool': 1,
+            'uint16': 2, 'int16': 2,
+            'uint32': 4, 'int32': 4, 'float': 4,
+            'double': 8
+        };
+        return sizes[type] || 0;
+    }
+
+    // C 语法检查方法（Web 方案）
+    checkCSyntax(hContent, cContent) {
+        const errors = [];
+        const warnings = [];
+        
+        // 检查 .h 文件
+        this.checkCFile(hContent, 'custom_data.h', errors, warnings);
+        
+        // 检查 .c 文件
+        this.checkCFile(cContent, 'custom_data.c', errors, warnings);
+        
+        // 构建返回结果
+        const result = {
+            passed: errors.length === 0,
+            errors: errors,
+            warnings: warnings
+        };
+        
+        if (errors.length > 0) {
+            result.message = `❌ 语法检查发现 ${errors.length} 个错误`;
+            console.log(`❌ 语法检查发现 ${errors.length} 个错误`);
+            errors.forEach(err => console.log(`   ${err}`));
+        } else if (warnings.length > 0) {
+            result.message = `✅ 语法检查通过 (${warnings.length} 个警告)`;
+            console.log(`⚠️ 语法检查通过，但有 ${warnings.length} 个警告`);
+            warnings.forEach(warn => console.log(`   ${warn}`));
+        } else {
+            result.message = '✅ 语法检查通过';
+            console.log('✅ 语法检查通过，无警告');
+        }
+        
+        return result;
+    }
+
+    checkCFile(content, filename, errors, warnings) {
+        const lines = content.split('\n');
+        const isHeader = filename.endsWith('.h');
+        
+        // 1. 检查常见类型名错误
+        const typos = [
+            { wrong: 'unint8_t', right: 'uint8_t' },
+            { wrong: 'unint16_t', right: 'uint16_t' },
+            { wrong: 'unint32_t', right: 'uint32_t' },
+            { wrong: 'unint64_t', right: 'uint64_t' }
+        ];
+        
+        lines.forEach((line, idx) => {
+            const lineNum = idx + 1;
+            typos.forEach(typo => {
+                if (line.includes(typo.wrong)) {
+                    errors.push(`${filename}:${lineNum}: 类型名错误: '${typo.wrong}' 应为 '${typo.right}'`);
+                }
+            });
+        });
+        
+        // 2. 检查括号匹配（全局）
+        let braceCount = 0;
+        let parenCount = 0;
+        
+        lines.forEach((line, idx) => {
+            const lineNum = idx + 1;
+            const trimmed = line.trim();
+            
+            // 跳过注释行
+            if (trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('*')) {
+                return;
+            }
+            
+            // 检查大括号
+            for (const char of line) {
+                if (char === '{') braceCount++;
+                if (char === '}') braceCount--;
+                if (braceCount < 0) {
+                    errors.push(`${filename}:${lineNum}: 多余的右大括号 '}'`);
+                    braceCount = 0;
+                }
+            }
+            
+            // 检查圆括号（每行单独检查）
+            let localParenCount = 0;
+            for (const char of line) {
+                if (char === '(') localParenCount++;
+                if (char === ')') localParenCount--;
+                if (localParenCount < 0) {
+                    errors.push(`${filename}:${lineNum}: 括号不匹配`);
+                    localParenCount = 0;
+                }
+            }
+            if (localParenCount > 0 && !trimmed.endsWith('\\')) {
+                // 可能是多行表达式，只警告
+                warnings.push(`${filename}:${lineNum}: 该行圆括号未闭合（可能是多行语句）`);
+            }
+        });
+        
+        if (braceCount !== 0) {
+            errors.push(`${filename}: 大括号不匹配（${braceCount > 0 ? '缺少' : '多余'} ${Math.abs(braceCount)} 个右大括号）`);
+        }
+        
+        // 3. 检查分号（针对语句）
+        lines.forEach((line, idx) => {
+            const lineNum = idx + 1;
+            const trimmed = line.trim();
+            
+            // 跳过空行、注释、预处理指令、大括号单独行
+            if (!trimmed || 
+                trimmed.startsWith('//') || 
+                trimmed.startsWith('/*') || 
+                trimmed.startsWith('*') ||
+                trimmed.startsWith('#') ||
+                trimmed === '{' ||
+                trimmed === '}') {
+                return;
+            }
+            
+            // 检查可能需要分号的语句
+            const needsSemicolon = 
+                /^\s*(return|break|continue)\s+/.test(line) || // return/break/continue 语句
+                (/=\s*[^=]/.test(trimmed) && !trimmed.includes('{') && !trimmed.endsWith(';')); // 赋值语句（非结构体初始化，且未以分号结尾）
+            
+            if (needsSemicolon && !trimmed.endsWith(';') && !trimmed.endsWith(',')) {
+                warnings.push(`${filename}:${lineNum}: 可能缺少分号`);
+            }
+        });
+        
+        // 4. 头文件特定检查
+        if (isHeader) {
+            const hasIfndef = content.includes('#ifndef');
+            const hasDefine = content.includes('#define');
+            const hasEndif = content.includes('#endif');
+            
+            if (!hasIfndef || !hasDefine || !hasEndif) {
+                warnings.push(`${filename}: 头文件可能缺少头文件保护 (#ifndef/#define/#endif)`);
+            }
+        }
+        
+        // 5. .c 文件特定检查
+        if (!isHeader) {
+            if (!content.includes('#include "custom_data.h"')) {
+                warnings.push(`${filename}: .c 文件应包含对应的 .h 文件`);
+            }
+        }
+        
+        // 6. 检查可疑的指针语法
+        lines.forEach((line, idx) => {
+            const lineNum = idx + 1;
+            const trimmed = line.trim();
+            
+            // 跳过注释行（包含 @brief、@param 等 Doxygen 标记）
+            if (trimmed.startsWith('//') || 
+                trimmed.startsWith('/*') || 
+                trimmed.startsWith('*') ||
+                trimmed.startsWith('@')) {
+                return;
+            }
+            
+            // 检查 ** 但不在类型声明中（如 uint8_t **）或注释中
+            if (/\*\s*\*(?!\))/.test(line) && 
+                !/uint\d+_t\s+\*\*/.test(line) &&
+                !line.includes('/**') &&
+                !line.includes('**/')) {
+                warnings.push(`${filename}:${lineNum}: 检测到双重指针，请确认语法正确`);
             }
         });
     }
@@ -920,1190 +1597,626 @@ class VisualMQTTServer {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MQTT 服务器可视化控制台</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Microsoft YaHei', 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 1600px;
-            margin: 0 auto;
-        }
-        
-        header {
-            background: white;
-            padding: 20px 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        
-        h1 {
-            color: #333;
-            font-size: 28px;
-            margin-bottom: 10px;
-        }
-        
-        .subtitle {
-            color: #666;
-            font-size: 14px;
-        }
-        
-        .main-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-        
-        .panel {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        
-        .panel-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px 20px;
-            font-size: 18px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        
-        .panel-body {
-            padding: 20px;
-            max-height: 600px;
-            overflow-y: auto;
-        }
-        
-        .message-item {
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .message-item:hover {
-            border-color: #667eea;
-            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
-        }
-        
-        .message-item.active {
-            border-color: #667eea;
-            background: #f0f4ff;
-        }
-        
-        .message-name {
-            font-size: 16px;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 5px;
-        }
-        
-        .message-desc {
-            font-size: 13px;
-            color: #666;
-            margin-bottom: 10px;
-        }
-        .message-subdesc {
-            font-size: 12px;
-            color: #999;
-            margin-top: -6px;
-            margin-bottom: 8px;
-            line-height: 1.2;
-        }
-        
-        .field-list {
-            margin-top: 10px;
-            display: none;
-        }
-        
-        .message-item.active .field-list {
-            display: block;
-        }
-        
-        .field-item {
-            background: #f8f9fa;
-            padding: 8px 12px;
-            border-radius: 5px;
-            margin-bottom: 8px;
-            font-size: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            flex-wrap: wrap;
-        }
-        
-        .field-left {
-            flex: 1;
-            min-width: 200px;
-        }
-        
-        .field-right {
-            margin-left: 10px;
-            min-width: 150px;
-        }
-        
-        /* 上行消息的接收值显示区域 */
-        .field-right.received {
-            background: #e8f5e9;
-            padding: 4px 10px;
-            border-radius: 4px;
-            border-left: 3px solid #28a745;
-        }
-        
-        .field-name {
-            font-weight: bold;
-            color: #667eea;
-        }
-        
-        .field-type {
-            color: #999;
-            font-style: italic;
-        }
-        
-        .field-comment {
-            color: #666;
-            margin-top: 3px;
-        }
-        
-        .field-value-label {
-            font-size: 11px;
-            color: #28a745;
-            font-weight: bold;
-            margin-bottom: 2px;
-        }
-        
-        .field-value-display {
-            color: #1565c0;
-            font-weight: bold;
-            font-size: 13px;
-        }
-        
-        /* 上行消息接收到的数据显示样式 */
-        .field-value-empty {
-            color: #999;
-            font-style: italic;
-            font-size: 12px;
-        }
-        
-        .field-value-received {
-            color: #1565c0;
-            font-weight: bold;
-            font-size: 14px;
-            margin-bottom: 4px;
-        }
-        
-        .field-value-desc {
-            color: #666;
-            font-size: 11px;
-            margin-top: 4px;
-            font-style: italic;
-        }
-        
-        .field-value-time {
-            color: #999;
-            font-size: 10px;
-            margin-top: 4px;
-            text-align: right;
-        }
-        
-        .field-input-section {
-            background: #fff3cd;
-            padding: 8px 10px;
-            border-radius: 4px;
-            border-left: 3px solid #ffc107;
-            margin-left: 10px;
-            min-width: 150px;
-        }
-        
-        .field-input-label {
-            font-size: 11px;
-            color: #856404;
-            font-weight: bold;
-            margin-bottom: 5px;
-            display: block;
-        }
-        
-        .field-input {
-            width: 100%;
-            padding: 6px 8px;
-            border: 1px solid #ddd;
-            border-radius: 3px;
-            font-size: 12px;
-            font-family: 'Consolas', 'Monaco', monospace;
-            min-height: 28px;
-            line-height: 1.4;
-        }
-        
-        .field-select {
-            width: 100%;
-            padding: 6px 8px;
-            border: 1px solid #ddd;
-            border-radius: 3px;
-            font-size: 12px;
-            background: white;
-            min-height: 28px;
-            line-height: 1.4;
-        }
-        
-        .send-message-btn {
-            margin-top: 10px;
-            padding: 8px 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 13px;
-            font-weight: bold;
-            cursor: pointer;
-            width: 100%;
-        }
-        
-        .send-message-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
-        }
-        
-        .form-group {
-            margin-bottom: 15px;
-        }
-        
-        .form-label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #333;
-            font-size: 14px;
-        }
-        
-        .form-input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-        
-        .form-textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 13px;
-            font-family: 'Consolas', 'Monaco', monospace;
-            min-height: 200px;
-        }
-        
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
-        }
-        
-        .btn-success {
-            background: #28a745;
-            color: white;
-        }
-        
-        .btn-danger {
-            background: #dc3545;
-            color: white;
-        }
-        
-        .btn-group {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .history-item {
-            background: #f8f9fa;
-            border-left: 4px solid #667eea;
-            padding: 12px 15px;
-            margin-bottom: 12px;
-            border-radius: 5px;
-        }
-        
-        .history-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            font-size: 13px;
-        }
-        
-        .history-type {
-            font-weight: bold;
-            color: #667eea;
-        }
-        
-        .history-time {
-            color: #999;
-            font-size: 12px;
-        }
-        
-        .history-data {
-            background: white;
-            padding: 10px;
-            border-radius: 4px;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 12px;
-            overflow-x: auto;
-        }
-        
-        .field-display {
-            margin-bottom: 5px;
-            padding: 5px;
-            background: #f8f9fa;
-            border-radius: 3px;
-        }
-        
-        .field-display-name {
-            font-weight: bold;
-            color: #495057;
-            margin-right: 8px;
-        }
-        
-        .field-display-value {
-            color: #007bff;
-            font-weight: bold;
-        }
-        
-        .field-display-desc {
-            color: #6c757d;
-            font-size: 11px;
-            margin-top: 2px;
-        }
-        
-        .badge {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: bold;
-            margin-left: 8px;
-        }
-        
-        .badge-up {
-            background: #28a745;
-            color: white;
-        }
-        
-        .badge-down {
-            background: #007bff;
-            color: white;
-        }
-        
-        .auto-publish-control {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-        
-        .auto-publish-control h3 {
-            margin-bottom: 10px;
-            color: #333;
-            font-size: 16px;
-        }
-        
-        .status-indicator {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            margin-right: 5px;
-        }
-        
-        .status-active {
-            background: #28a745;
-            box-shadow: 0 0 5px #28a745;
-        }
-        
-        .status-inactive {
-            background: #dc3545;
-        }
-    </style>
+    <link rel="stylesheet" href="/css/main.css">
+    <script src="/lib/vue.global.prod.js"></script>
 </head>
 <body>
-    <div class="container">
+    <div id="app" class="container" v-cloak>
         <header>
             <h1>🚀 MQTT 服务器可视化控制台</h1>
             <div class="subtitle">RoboMaster 2026 自定义客户端通信协议 - 数据配置与监控</div>
         </header>
+
+        <nav-bar :current-tab="currentTab" @update:current-tab="currentTab = $event"></nav-bar>
         
-        <div class="main-content">
-            <!-- 左侧：上行消息 -->
-            <div class="panel">
-                <div class="panel-header">
-                    📥 上行消息（客户端 → 服务器）
-                    <span class="badge badge-up" id="uplinkCount">0</span>
+        <div v-if="currentTab === 'console'">
+            <div class="main-content">
+                <!-- 左侧：上行消息 -->
+                <div class="panel">
+                    <div class="panel-header">
+                        📥 上行消息（客户端 → 服务器）
+                        <span class="badge badge-up">{{ uplinkCount }}</span>
+                    </div>
+                    <div class="panel-body">
+                        <p v-if="!messagesData || !messagesData.clientMessages || messagesData.clientMessages.length === 0" style="color: #999; text-align: center; padding: 20px;">
+                            {{ messagesData ? '暂无上行消息' : '加载中...' }}
+                        </p>
+                        <div v-else v-for="msg in messagesData.clientMessages" :key="msg.name" 
+                             class="message-item" :class="{ active: activeMessage === msg.name }"
+                             @click="toggleMessage(msg.name)">
+                            <div class="message-name">{{ msg.name }}</div>
+                            <div class="message-desc">{{ msg.metadata.displayName || msg.metadata.description || '无描述' }}</div>
+                            
+                            <div class="field-list" @click.stop>
+                                <div v-for="(field, fieldName) in msg.metadata.fields" :key="fieldName" class="field-item">
+                                    <div class="field-left">
+                                        <span class="field-name">{{ fieldName }}</span>
+                                        <span class="field-type">({{ field.repeated ? 'repeated ' : '' }}{{ field.type }})</span>
+                                        <div class="field-comment">{{ field.description || field.comment || '无说明' }}</div>
+                                    </div>
+                                    <div class="field-right received" :id="'value-' + msg.name + '-' + fieldName">
+                                        <div v-if="receivedValues[msg.name] && receivedValues[msg.name][fieldName]" class="field-value-received">
+                                            {{ receivedValues[msg.name][fieldName].display }}
+                                        </div>
+                                        <div v-if="receivedValues[msg.name] && receivedValues[msg.name][fieldName] && receivedValues[msg.name][fieldName].description" class="field-value-desc">
+                                            💡 {{ receivedValues[msg.name][fieldName].description }}
+                                        </div>
+                                        <div v-if="receivedValues[msg.name] && receivedValues[msg.name][fieldName]" class="field-value-time">
+                                            {{ receivedValues[msg.name][fieldName].time }}
+                                        </div>
+                                        <div v-else class="field-value-empty">暂无数据</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="panel-body" id="uplinkMessages">
-                    <p style="color: #999; text-align: center; padding: 20px;">加载中...</p>
+                
+                <!-- 右侧：下行消息 -->
+                <div class="panel">
+                    <div class="panel-header">
+                        📤 下行消息（服务器 → 客户端）
+                        <span class="badge badge-down">{{ downlinkCount }}</span>
+                    </div>
+                    <div class="panel-body">
+                        <p v-if="!messagesData || !messagesData.serverMessages || messagesData.serverMessages.length === 0" style="color: #999; text-align: center; padding: 20px;">
+                            {{ messagesData ? '暂无下行消息' : '加载中...' }}
+                        </p>
+                        <div v-else v-for="msg in messagesData.serverMessages" :key="msg.name"
+                             class="message-item" :class="{ active: activeMessage === msg.name }"
+                             @click="toggleMessage(msg.name)">
+                            <div class="message-name">{{ messagesData.messageDisplayNames?.[msg.name] || msg.name }}</div>
+                            <div class="message-desc">{{ msg.metadata.displayName || msg.metadata.description || '无描述' }}</div>
+                            
+                            <div class="field-list" @click.stop>
+                                <div v-for="(field, fieldName) in msg.metadata.fields" :key="fieldName" class="field-item">
+                                    <div class="field-left">
+                                        <span class="field-name">{{ fieldName }}</span>
+                                        <span class="field-type">({{ field.repeated ? 'repeated ' : '' }}{{ field.type }})</span>
+                                        <div class="field-comment">{{ field.description || field.comment || '无说明' }}</div>
+                                    </div>
+                                    <div class="field-right" v-html="generateFieldInput(msg.name, fieldName, field)"></div>
+                                </div>
+                                
+                                <div class="op-area" style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
+                                    <button class="send-message-btn" @click.stop="sendDownlinkMessage(msg.name)">📤 发送此消息</button>
+                                    <label class="form-label" :for="'autoFreq-' + msg.name">频率(Hz)</label>
+                                    <input type="number" class="form-input" :id="'autoFreq-' + msg.name" 
+                                           :value="messagesData.messageDefaultFrequencies?.[msg.name] || 1"
+                                           min="0.1" step="0.1" style="width: 100px;" @click.stop>
+                                    <label style="display: flex; gap: 6px; align-items: center; font-size: 12px; color: #333;" @click.stop>
+                                        <input type="checkbox" :id="'autoEnable-' + msg.name" @click.stop="toggleAutoPublish(msg.name)">
+                                        自动发送
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             
-            <!-- 右侧：下行消息 -->
-            <div class="panel">
+            <!-- 历史记录 -->
+            <div class="panel" style="margin-top: 30px;">
                 <div class="panel-header">
-                    📤 下行消息（服务器 → 客户端）
-                    <span class="badge badge-down" id="downlinkCount">0</span>
+                    📜 通信历史
+                    <button class="btn btn-secondary" @click="refreshHistory" style="margin-left: auto;">刷新</button>
                 </div>
-                <div class="panel-body" id="downlinkMessages">
-                    <p style="color: #999; text-align: center; padding: 20px;">加载中...</p>
+                <div class="panel-body" id="historyPanel">
+                    <p v-if="history.length === 0" style="color: #999; text-align: center; padding: 20px;">暂无历史记录</p>
+                    <div v-for="(item, index) in history" :key="index" class="history-item">
+                        <div class="history-header">
+                            <div>
+                                <span class="history-type">{{ item.messageType }}</span>
+                                <span style="color: #999; font-size: 12px;">客户端: {{ item.clientId }}</span>
+                            </div>
+                            <span class="history-time">{{ new Date(item.timestamp).toLocaleString('zh-CN') }}</span>
+                        </div>
+                        <div v-if="item.parsedData && Object.keys(item.parsedData).length > 0" style="margin-top: 8px;">
+                            <div v-for="(fieldInfo, fieldName) in item.parsedData" :key="fieldName" class="field-display">
+                                <span class="field-display-name">{{ fieldName }}:</span>
+                                <span class="field-display-value">{{ fieldInfo.display }}</span>
+                                <div v-if="fieldInfo.description" class="field-display-desc">💡 {{ fieldInfo.description }}</div>
+                            </div>
+                        </div>
+                        <div v-else class="history-data">{{ JSON.stringify(item.data, null, 2) }}</div>
+                    </div>
                 </div>
             </div>
         </div>
-        
-        <!-- 历史记录 -->
-        <div class="panel" style="margin-top: 30px;">
-            <div class="panel-header">
-                📜 通信历史
-                <button class="btn btn-secondary" onclick="refreshHistory()" style="margin-left: auto;">刷新</button>
-            </div>
-            <div class="panel-body" id="historyPanel">
-                <p style="color: #999; text-align: center; padding: 20px;">暂无历史记录</p>
-            </div>
+
+        <div v-if="currentTab === 'custom-config'">
+            <custom-data-config></custom-data-config>
         </div>
         
-        <!-- 版权信息 -->
         <footer style="text-align: center; padding: 20px 0 30px 0; color: #999; font-size: 12px;">
             江南大学霞客湾校区 MeroT 制作
         </footer>
     </div>
     
-    <script>
-        let messagesData = null;
-        let autoPublishActive = false;
-        
-        // 加载消息定义
-        async function loadMessages() {
-            try {
-                const response = await fetch('/api/messages');
-                messagesData = await response.json();
-                
-                renderUplinkMessages();
-                renderDownlinkMessages();
-                populateManualSelect();
-            } catch (error) {
-                console.error('加载消息定义失败:', error);
-            }
-        }
-        
-        // 渲染上行消息
-        function renderUplinkMessages() {
-            const container = document.getElementById('uplinkMessages');
-            const count = document.getElementById('uplinkCount');
-            
-            if (!messagesData || messagesData.clientMessages.length === 0) {
-                container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">暂无上行消息</p>';
-                count.textContent = '0';
-                return;
-            }
-            
-            count.textContent = messagesData.clientMessages.length;
+    <script type="module">
+        import NavBar from '/js/components/NavBar.js';
+        import CustomDataConfig from '/js/components/CustomDataConfig.js';
 
-            messagesData.clientMessages.forEach(msg => {
-                const meta = msg.metadata;
-                const item = document.createElement('div');
-                item.className = 'message-item';
-                item.setAttribute('onclick', 'toggleMessage(this)');
+        const { createApp, ref, reactive, computed, onMounted } = Vue;
 
-                const nameEl = document.createElement('div');
-                nameEl.className = 'message-name';
-                nameEl.textContent = msg.name;
+        const app = createApp({
+            components: {
+                NavBar,
+                CustomDataConfig
+            },
+            setup() {
+                const currentTab = ref('console');
+                const messagesData = ref(null);
+                const activeMessage = ref(null);
+                const receivedValues = reactive({});
+                const history = ref([]);
+                const autoPublishActive = ref(false);
 
-                const descEl = document.createElement('div');
-                descEl.className = 'message-desc';
-                descEl.textContent = meta.displayName || meta.description || '无描述';
+                const uplinkCount = computed(() => messagesData.value?.clientMessages?.length || 0);
+                const downlinkCount = computed(() => messagesData.value?.serverMessages?.length || 0);
 
-                const fieldList = document.createElement('div');
-                fieldList.className = 'field-list';
+                async function loadMessages() {
+                    try {
+                        const response = await fetch('/api/messages');
+                        messagesData.value = await response.json();
+                    } catch (error) {
+                        console.error('加载消息定义失败:', error);
+                    }
+                }
 
-                Object.entries(meta.fields).forEach(([fieldName, field]) => {
-                    const fieldItem = document.createElement('div');
-                    fieldItem.className = 'field-item';
-
-                    const left = document.createElement('div');
-                    left.className = 'field-left';
-                    const fn = document.createElement('span'); fn.className = 'field-name'; fn.textContent = fieldName;
-                    const ft = document.createElement('span'); ft.className = 'field-type'; ft.textContent = '(' + (field.repeated ? 'repeated ' : '') + field.type + ')';
-                    const fc = document.createElement('div'); fc.className = 'field-comment'; fc.textContent = field.description || field.comment || '无说明';
-                    left.appendChild(fn); left.appendChild(ft); left.appendChild(fc);
-
-                    const right = document.createElement('div');
-                    right.className = 'field-right received';
-                    right.id = 'value-' + msg.name + '-' + fieldName;
-                    const empty = document.createElement('div'); empty.className = 'field-value-empty'; empty.textContent = '暂无数据';
-                    right.appendChild(empty);
-
-                    fieldItem.appendChild(left);
-                    fieldItem.appendChild(right);
-                    fieldList.appendChild(fieldItem);
-                });
-
-                item.appendChild(nameEl);
-                item.appendChild(descEl);
-                item.appendChild(fieldList);
-                container.appendChild(item);
-            });
-        }
-        
-        // 渲染下行消息
-        function renderDownlinkMessages() {
-            const container = document.getElementById('downlinkMessages');
-            const count = document.getElementById('downlinkCount');
-
-            container.innerHTML = '';
-            if (!messagesData || messagesData.serverMessages.length === 0) {
-                container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">暂无下行消息</p>';
-                count.textContent = '0';
-                return;
-            }
-
-            count.textContent = messagesData.serverMessages.length;
-
-            messagesData.serverMessages.forEach(msg => {
-                const meta = msg.metadata;
-                const item = document.createElement('div');
-                item.className = 'message-item';
-                item.setAttribute('onclick', 'toggleMessage(this)');
-
-                const nameEl = document.createElement('div');
-                nameEl.className = 'message-name';
-                nameEl.textContent = messagesData.messageDisplayNames?.[msg.name] || msg.name;
-
-                const descEl = document.createElement('div');
-                descEl.className = 'message-desc';
-                descEl.textContent = meta.displayName || meta.description || '无描述';
-
-                const fieldList = document.createElement('div');
-                fieldList.className = 'field-list';
-
-                Object.entries(meta.fields).forEach(([fieldName, field]) => {
-                    const fieldItem = document.createElement('div');
-                    fieldItem.className = 'field-item';
-
-                    const left = document.createElement('div');
-                    left.className = 'field-left';
-                    const fn = document.createElement('span');
-                    fn.className = 'field-name';
-                    fn.textContent = fieldName;
-                    const ft = document.createElement('span');
-                    ft.className = 'field-type';
-                    ft.textContent = '(' + (field.repeated ? 'repeated ' : '') + field.type + ')';
-                    const fc = document.createElement('div');
-                    fc.className = 'field-comment';
-                    fc.textContent = field.description || field.comment || '无说明';
-                    left.appendChild(fn);
-                    left.appendChild(ft);
-                    left.appendChild(fc);
-
-                    const inputWrapper = document.createElement('div');
-                    inputWrapper.className = 'field-right';
-                    const inputHtml = generateFieldInput(msg.name, fieldName, field);
-                    inputWrapper.innerHTML = inputHtml;
-
-                    fieldItem.appendChild(left);
-                    fieldItem.appendChild(inputWrapper);
-                    fieldList.appendChild(fieldItem);
-                });
-
-                const opArea = document.createElement('div');
-                opArea.style.display = 'flex';
-                opArea.style.gap = '10px';
-                opArea.style.alignItems = 'center';
-                opArea.style.marginTop = '10px';
-
-                const sendBtn = document.createElement('button');
-                sendBtn.className = 'send-message-btn';
-                sendBtn.textContent = '📤 发送此消息';
-                sendBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    sendDownlinkMessage(msg.name);
-                };
-
-                const freqLabel = document.createElement('label');
-                freqLabel.className = 'form-label';
-                freqLabel.textContent = '频率(Hz)';
-
-                const freqInput = document.createElement('input');
-                freqInput.type = 'number';
-                freqInput.className = 'form-input';
-                freqInput.id = 'autoFreq-' + msg.name;
-                freqInput.value = messagesData.messageDefaultFrequencies?.[msg.name] || 1;
-                freqInput.min = 0.1;
-                freqInput.step = 0.1;
-                freqInput.style.width = '100px';
-
-                const checkLabel = document.createElement('label');
-                checkLabel.style.display = 'flex';
-                checkLabel.style.gap = '6px';
-                checkLabel.style.alignItems = 'center';
-                checkLabel.style.fontSize = '12px';
-                checkLabel.style.color = '#333';
-
-                const checkBox = document.createElement('input');
-                checkBox.type = 'checkbox';
-                checkBox.id = 'autoEnable-' + msg.name;
-                checkBox.onclick = (e) => {
-                    e.stopPropagation();
-                    toggleAutoPublish(msg.name);
-                };
-
-                checkLabel.appendChild(checkBox);
-                checkLabel.appendChild(document.createTextNode('自动发送'));
-
-                opArea.appendChild(sendBtn);
-                opArea.appendChild(freqLabel);
-                opArea.appendChild(freqInput);
-                opArea.appendChild(checkLabel);
-
-                item.appendChild(nameEl);
-                item.appendChild(descEl);
-                item.appendChild(fieldList);
-                item.appendChild(opArea);
-                container.appendChild(item);
-            });
-        }
-        
-        // 生成字段输入框
-        function generateFieldInput(messageName, fieldName, fieldMeta) {
-            const inputId = \`input-\${messageName}-\${fieldName}\`;
-            const description = fieldMeta.description || fieldMeta.comment || '';
-            
-            // 特殊映射：DeployModeStatusSync的status字段使用deploy_mode_status映射
-            let mappingKey = fieldName;
-            if (messageName === 'DeployModeStatusSync' && fieldName === 'status') {
-                mappingKey = 'deploy_mode_status';
-            } else if (messageName === 'TechCoreMotionStateSync' && fieldName === 'status') {
-                mappingKey = 'core_status';
-            }
-            
-            // 检查是否有状态映射（优先使用 Protocol.md 定义）
-            const statusOptions = messagesData.statusMappings?.[mappingKey];
-            if (statusOptions && statusOptions.length > 0) {
-                const optionsHtml = statusOptions.map(opt => 
-                    \`<option value="\${opt.value}">\${opt.value}: \${opt.label}</option>\`
-                ).join('');
-                
-                return \`
-                    <div class="field-input-section" onclick="event.stopPropagation()">
-                        <div class="field-input-label">✏️ 选择状态</div>
-                        <select class="field-select" id="\${inputId}" data-type="\${fieldMeta.type}">
-                            \${optionsHtml}
-                        </select>
-                    </div>
-                \`;
-            }
-            
-            // 布尔类型 - 使用下拉框
-            if (fieldMeta.type === 'bool') {
-                let options = '';
-                if (description.includes('false') || description.includes('true')) {
-                    const match = description.match(/(false|抬起|否)[^a-zA-Z]*[:：=]?([^,，)]+).*?(true|按下|是)[^a-zA-Z]*[:：=]?([^,，)]+)/i);
-                    if (match) {
-                        const falseText = match[2]?.trim() || '抬起/否';
-                        const trueText = match[4]?.trim() || '按下/是';
-                        options = \`
-                            <option value="false">false: \${falseText}</option>
-                            <option value="true">true: \${trueText}</option>
-                        \`;
+                function toggleMessage(name) {
+                    if (activeMessage.value === name) {
+                        activeMessage.value = null;
                     } else {
-                        options = \`
-                            <option value="false">false</option>
-                            <option value="true">true</option>
-                        \`;
+                        activeMessage.value = name;
                     }
-                } else {
-                    options = \`
-                        <option value="false">false</option>
-                        <option value="true">true</option>
-                    \`;
                 }
-                
-                return \`
-                    <div class="field-input-section" onclick="event.stopPropagation()">
-                        <div class="field-input-label">✏️ 设置值</div>
-                        <select class="field-select" id="\${inputId}" data-type="bool">
-                            \${options}
-                        </select>
-                    </div>
-                \`;
-            }
-            
-            // 枚举类型 - 检查是否有枚举注释（作为fallback）
-            const enumComment = fieldMeta.enumComment;
-            
-            if (enumComment || (fieldMeta.type === 'uint32' && description.includes('枚举'))) {
-                const enumOptions = parseEnumOptions(enumComment || description);
-                if (enumOptions.length > 0) {
-                    const optionsHtml = enumOptions.map(opt => 
-                        \`<option value="\${opt.value}">\${opt.value}: \${opt.label}</option>\`
-                    ).join('');
+
+                function generateFieldInput(messageName, fieldName, fieldMeta) {
+                    const inputId = \`input-\${messageName}-\${fieldName}\`;
+                    const description = fieldMeta.description || fieldMeta.comment || '';
                     
-                    return \`
-                        <div class="field-input-section" onclick="event.stopPropagation()">
-                            <div class="field-input-label">✏️ 选择值</div>
-                            <select class="field-select" id="\${inputId}" data-type="uint32">
-                                \${optionsHtml}
+                    // CustomByteBlock 特殊处理：显示配置选择器
+                    if (messageName === 'CustomByteBlock') {
+                        return \`<div class="field-input-section" onclick="event.stopPropagation()">
+                            <label class="field-input-label">📋 选择配置</label>
+                            <select class="field-select" id="custom-config-selector" onchange="loadCustomConfig(this.value)">
+                                <option value="">请选择配置...</option>
                             </select>
-                        </div>
-                    \`;
-                }
-            }
-            
-            // 数组类型 - 使用文本框，提示输入JSON数组
-            if (fieldMeta.repeated) {
-                return \`
-                    <div class="field-input-section" onclick="event.stopPropagation()">
-                        <div class="field-input-label">✏️ 输入值 (数组，如: [1,2,3])</div>
-                        <input type="text" class="field-input" id="\${inputId}" 
-                               data-type="\${fieldMeta.type}" data-repeated="true"
-                               placeholder="[1, 2, 3]" value="[]">
-                    </div>
-                \`;
-            }
-            
-            // 数值类型 - 使用数字输入框
-            if (fieldMeta.type === 'uint32' || fieldMeta.type === 'int32') {
-                return \`
-                    <div class="field-input-section" onclick="event.stopPropagation()">
-                        <div class="field-input-label">✏️ 输入值</div>
-                        <input type="number" class="field-input" id="\${inputId}" 
-                               data-type="\${fieldMeta.type}"
-                               placeholder="0" value="0">
-                    </div>
-                \`;
-            }
-            
-            // 浮点数类型
-            if (fieldMeta.type === 'float' || fieldMeta.type === 'double') {
-                return \`
-                    <div class="field-input-section" onclick="event.stopPropagation()">
-                        <div class="field-input-label">✏️ 输入值</div>
-                        <input type="number" step="0.01" class="field-input" id="\${inputId}" 
-                               data-type="\${fieldMeta.type}"
-                               placeholder="0.0" value="0.0">
-                    </div>
-                \`;
-            }
-            
-            // 字符串类型
-            if (fieldMeta.type === 'string') {
-                return \`
-                    <div class="field-input-section" onclick="event.stopPropagation()">
-                        <div class="field-input-label">✏️ 输入值</div>
-                        <input type="text" class="field-input" id="\${inputId}" 
-                               data-type="string"
-                               placeholder="文本内容" value="">
-                    </div>
-                \`;
-            }
-            
-            // bytes类型
-            if (fieldMeta.type === 'bytes') {
-                return \`
-                    <div class="field-input-section" onclick="event.stopPropagation()">
-                        <div class="field-input-label">✏️ 输入值 (文本或Base64)</div>
-                        <input type="text" class="field-input" id="\${inputId}" 
-                               data-type="bytes"
-                               placeholder="文本内容" value="">
-                    </div>
-                \`;
-            }
-            
-            // 默认文本输入框
-            return \`
-                <div class="field-input-section" onclick="event.stopPropagation()">
-                    <div class="field-input-label">✏️ 输入值</div>
-                    <input type="text" class="field-input" id="\${inputId}" 
-                           data-type="\${fieldMeta.type}"
-                           placeholder="值" value="">
-                </div>
-            \`;
-        }
-        
-        // 解析枚举选项
-        function parseEnumOptions(description) {
-            const match = description.match(/枚举[^:]*:\s*(.+)/);
-            if (!match) return [];
-            
-            const enumPart = match[1];
-            const pairs = enumPart.split(/[,，、]/);
-            const options = [];
-            
-            for (const pair of pairs) {
-                const pairMatch = pair.trim().match(/^(\d+)\s*[:：]\s*(.+)/);
-                if (pairMatch) {
-                    options.push({
-                        value: parseInt(pairMatch[1]),
-                        label: pairMatch[2].trim()
-                    });
-                }
-            }
-            
-            return options;
-        }
-        
-        // 发送下行消息
-        async function sendDownlinkMessage(messageType) {
-            try {
-                const msg = messagesData.serverMessages.find(m => m.name === messageType);
-                if (!msg) return;
-                
-                const data = {};
-                
-                // 收集所有字段的值
-                for (const [fieldName, fieldMeta] of Object.entries(msg.metadata.fields)) {
-                    const inputId = \`input-\${messageType}-\${fieldName}\`;
-                    const inputElement = document.getElementById(inputId);
+                            <label class="field-input-label" for="\${inputId}">✏️ 输入值</label>
+                            <input type="text" class="field-input" id="\${inputId}" data-type="\${fieldMeta.type}" placeholder="0" value="0">
+                        </div>\`;
+                    }
                     
-                    if (!inputElement) continue;
+                    let mappingKey = fieldName;
+                    if (messageName === 'DeployModeStatusSync' && fieldName === 'status') {
+                        mappingKey = 'deploy_mode_status';
+                    } else if (messageName === 'TechCoreMotionStateSync' && fieldName === 'status') {
+                        mappingKey = 'core_status';
+                    }
                     
-                    const dataType = inputElement.getAttribute('data-type');
-                    const isRepeated = inputElement.getAttribute('data-repeated') === 'true';
-                    let value = inputElement.value;
+                    const statusOptions = messagesData.value?.statusMappings?.[mappingKey];
+                    if (statusOptions && statusOptions.length > 0) {
+                        const optionsHtml = statusOptions.map(opt => 
+                            \`<option value="\${opt.value}">\${opt.value}: \${opt.label}</option>\`
+                        ).join('');
+                        return \`<div class="field-input-section" onclick="event.stopPropagation()"><label class="field-input-label" for="\${inputId}">✏️ 选择状态</label><select class="field-select" id="\${inputId}" data-type="\${fieldMeta.type}">\${optionsHtml}</select></div>\`;
+                    }
                     
-                    // 转换值
-                    if (isRepeated) {
-                        try {
-                            value = JSON.parse(value);
-                        } catch (e) {
-                            value = [];
+                    if (fieldMeta.type === 'bool') {
+                        let options = '';
+                        if (description.includes('false') || description.includes('true')) {
+                            const match = description.match(/(false|抬起|否)[^a-zA-Z]*[:：=]?([^,，)]+).*?(true|按下|是)[^a-zA-Z]*[:：=]?([^,，)]+)/i);
+                            if (match) {
+                                const falseText = match[2]?.trim() || '抬起/否';
+                                const trueText = match[4]?.trim() || '按下/是';
+                                options = \`<option value="false">false: \${falseText}</option><option value="true">true: \${trueText}</option>\`;
+                            } else {
+                                options = \`<option value="false">false</option><option value="true">true</option>\`;
+                            }
+                        } else {
+                            options = \`<option value="false">false</option><option value="true">true</option>\`;
                         }
-                    } else if (dataType === 'bool') {
-                        value = value === 'true';
-                    } else if (dataType === 'uint32' || dataType === 'int32') {
-                        value = parseInt(value) || 0;
-                    } else if (dataType === 'float' || dataType === 'double') {
-                        value = parseFloat(value) || 0.0;
+                        return \`<div class="field-input-section" onclick="event.stopPropagation()"><label class="field-input-label" for="\${inputId}">✏️ 设置值</label><select class="field-select" id="\${inputId}" data-type="bool">\${options}</select></div>\`;
                     }
                     
-                    data[fieldName] = value;
+                    const enumComment = fieldMeta.enumComment;
+                    if (enumComment || (fieldMeta.type === 'uint32' && description.includes('枚举'))) {
+                        const enumOptions = parseEnumOptions(enumComment || description);
+                        if (enumOptions.length > 0) {
+                            const optionsHtml = enumOptions.map(opt => 
+                                \`<option value="\${opt.value}">\${opt.value}: \${opt.label}</option>\`
+                            ).join('');
+                            return \`<div class="field-input-section" onclick="event.stopPropagation()"><label class="field-input-label" for="\${inputId}">✏️ 选择值</label><select class="field-select" id="\${inputId}" data-type="uint32">\${optionsHtml}</select></div>\`;
+                        }
+                    }
+                    
+                    if (fieldMeta.repeated) {
+                        return \`<div class="field-input-section" onclick="event.stopPropagation()"><label class="field-input-label" for="\${inputId}">✏️ 输入值 (数组，如: [1,2,3])</label><input type="text" class="field-input" id="\${inputId}" data-type="\${fieldMeta.type}" data-repeated="true" placeholder="[1, 2, 3]" value="[]"></div>\`;
+                    }
+                    
+                    if (fieldMeta.type === 'uint32' || fieldMeta.type === 'int32') {
+                        return \`<div class="field-input-section" onclick="event.stopPropagation()"><label class="field-input-label" for="\${inputId}">✏️ 输入值</label><input type="number" class="field-input" id="\${inputId}" data-type="\${fieldMeta.type}" placeholder="0" value="0"></div>\`;
+                    }
+                    
+                    if (fieldMeta.type === 'float' || fieldMeta.type === 'double') {
+                        return \`<div class="field-input-section" onclick="event.stopPropagation()"><label class="field-input-label" for="\${inputId}">✏️ 输入值</label><input type="number" step="0.01" class="field-input" id="\${inputId}" data-type="\${fieldMeta.type}" placeholder="0.0" value="0.0"></div>\`;
+                    }
+                    
+                    if (fieldMeta.type === 'string') {
+                        return \`<div class="field-input-section" onclick="event.stopPropagation()"><label class="field-input-label" for="\${inputId}">✏️ 输入值</label><input type="text" class="field-input" id="\${inputId}" data-type="string" placeholder="文本内容" value=""></div>\`;
+                    }
+                    
+                    if (fieldMeta.type === 'bytes') {
+                        return \`<div class="field-input-section" onclick="event.stopPropagation()"><label class="field-input-label" for="\${inputId}">✏️ 输入值 (文本或Base64)</label><input type="text" class="field-input" id="\${inputId}" data-type="bytes" placeholder="文本内容" value=""></div>\`;
+                    }
+                    
+                    return \`<div class="field-input-section" onclick="event.stopPropagation()"><label class="field-input-label" for="\${inputId}">✏️ 输入值</label><input type="text" class="field-input" id="\${inputId}" data-type="\${fieldMeta.type}" placeholder="值" value=""></div>\`;
                 }
-                
-                // 发送消息
-                const response = await fetch('/api/publish', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        messageType: messageType,
-                        topic: messageType,
-                        data: data
-                    })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    alert(\`✅ 发送成功！\\n主题: \${result.topic}\\n大小: \${result.size} 字节\`);
-                } else {
-                    alert(\`❌ 发送失败: \${result.error}\`);
-                }
-            } catch (error) {
-                alert(\`❌ 错误: \${error.message}\`);
-            }
-        }
-        
-        // 填充手动发送下拉框
-        function populateManualSelect() {
-            const select = document.getElementById('manualMessageType');
-            
-            if (!messagesData || !select) return; // 添加元素存在检查
-            
-            messagesData.serverMessages.forEach(msg => {
-                const option = document.createElement('option');
-                option.value = msg.name;
-                option.textContent = msg.name;
-                select.appendChild(option);
-            });
-        }
-        
-        // 更新手动发送模板
-        function updateManualTemplate() {
-            const select = document.getElementById('manualMessageType');
-            const textarea = document.getElementById('manualData');
-            const topicInput = document.getElementById('manualTopic');
-            const msgType = select.value;
-            
-            if (!msgType || !messagesData) return;
-            
-            topicInput.value = msgType;
-            
-            const msg = messagesData.serverMessages.find(m => m.name === msgType);
-            if (!msg) return;
-            
-            // 生成示例数据
-            const template = {};
-            Object.entries(msg.metadata.fields).forEach(([fieldName, field]) => {
-                if (field.repeated) {
-                    template[fieldName] = [];
-                } else if (field.type === 'uint32' || field.type === 'int32') {
-                    template[fieldName] = 0;
-                } else if (field.type === 'float') {
-                    template[fieldName] = 0.0;
-                } else if (field.type === 'bool') {
-                    template[fieldName] = false;
-                } else if (field.type === 'string') {
-                    template[fieldName] = "";
-                } else {
-                    template[fieldName] = null;
-                }
-            });
-            
-            textarea.value = JSON.stringify(template, null, 2);
-        }
-        
-        // 手动发送消息
-        async function publishManual() {
-            const msgType = document.getElementById('manualMessageType').value;
-            const topic = document.getElementById('manualTopic').value;
-            const dataText = document.getElementById('manualData').value;
-            const resultDiv = document.getElementById('publishResult');
-            
-            if (!msgType) {
-                resultDiv.innerHTML = '<p style="color: #dc3545;">请选择消息类型</p>';
-                return;
-            }
-            
-            try {
-                const data = JSON.parse(dataText);
-                
-                const response = await fetch('/api/publish', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        messageType: msgType,
-                        topic: topic || msgType,
-                        data: data
-                    })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    resultDiv.innerHTML = \`<p style="color: #28a745;">✅ 发送成功！主题: \${result.topic}, 大小: \${result.size} 字节</p>\`;
-                } else {
-                    resultDiv.innerHTML = \`<p style="color: #dc3545;">❌ 发送失败: \${result.error}</p>\`;
-                }
-            } catch (error) {
-                resultDiv.innerHTML = \`<p style="color: #dc3545;">❌ 错误: \${error.message}</p>\`;
-            }
-        }
-        
-        // 采集消息当前的输入数据
-        function collectMessageData(messageType) {
-            const msg = messagesData.serverMessages.find(m => m.name === messageType);
-            if (!msg) return {};
-            const data = {};
-            for (const [fieldName, fieldMeta] of Object.entries(msg.metadata.fields)) {
-                const inputId = 'input-' + messageType + '-' + fieldName;
-                const inputElement = document.getElementById(inputId);
-                if (!inputElement) continue;
-                const dataType = inputElement.getAttribute('data-type');
-                const isRepeated = inputElement.getAttribute('data-repeated') === 'true';
-                let value = inputElement.value;
-                if (isRepeated) {
-                    try { value = JSON.parse(value); } catch (e) { value = []; }
-                } else if (dataType === 'bool') { value = value === 'true'; }
-                else if (dataType === 'uint32' || dataType === 'int32') { value = parseInt(value) || 0; }
-                else if (dataType === 'float' || dataType === 'double') { value = parseFloat(value) || 0.0; }
-                data[fieldName] = value;
-            }
-            return data;
-        }
 
-        // 切换某条消息的自动发送
-        async function toggleAutoPublish(messageType) {
-            try {
-                const checkbox = document.getElementById('autoEnable-' + messageType);
-                const freqInput = document.getElementById('autoFreq-' + messageType);
-                const enabled = checkbox.checked;
-                const freqHz = parseFloat(freqInput.value) || messagesData.messageDefaultFrequencies?.[messageType] || 1;
-                const intervalMs = Math.round(1000 / freqHz); // 将Hz转换为ms
-                const data = collectMessageData(messageType);
+                function parseEnumOptions(description) {
+                    const match = description.match(/枚举[^:]*:\s*(.+)/);
+                    if (!match) return [];
+                    const enumPart = match[1];
+                    const pairs = enumPart.split(/[,，、]/);
+                    const options = [];
+                    for (const pair of pairs) {
+                        const pairMatch = pair.trim().match(/^(\d+)\s*[:：]\s*(.+)/);
+                        if (pairMatch) {
+                            options.push({ value: parseInt(pairMatch[1]), label: pairMatch[2].trim() });
+                        }
+                    }
+                    return options;
+                }
 
-                const response = await fetch('/api/auto-publish', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ messageType, enabled, intervalMs: intervalMs, topic: messageType, data })
+                async function sendDownlinkMessage(messageType) {
+                    try {
+                        // 特殊处理 CustomByteBlock
+                        if (messageType === 'CustomByteBlock') {
+                            // 查找容器
+                            let container = null;
+                            const messageItems = document.querySelectorAll('.message-item');
+                            messageItems.forEach(item => {
+                                const nameElement = item.querySelector('.message-name');
+                                if (nameElement && (nameElement.textContent.includes('CustomByteBlock') || nameElement.textContent.includes('自定义数据块'))) {
+                                    container = item;
+                                }
+                            });
+                            
+                            if (!container) {
+                                alert('❌ 未找到CustomByteBlock消息容器');
+                                return;
+                            }
+                            
+                            // 收集所有输入框的值
+                            const data = {};
+                            const inputs = container.querySelectorAll('.field-input');
+                            inputs.forEach(input => {
+                                const inputId = input.id;
+                                if (!inputId.startsWith('input-CustomByteBlock-')) return;
+                                
+                                const fieldName = inputId.replace('input-CustomByteBlock-', '');
+                                const dataType = input.getAttribute('data-type');
+                                
+                                let value;
+                                if (input.type === 'checkbox') {
+                                    value = input.checked;
+                                } else if (dataType === 'bool') {
+                                    value = input.value === 'true' || input.checked;
+                                } else if (dataType === 'uint32' || dataType === 'int32' || dataType === 'uint8' || dataType === 'int8' || dataType === 'uint16' || dataType === 'int16') {
+                                    value = parseInt(input.value) || 0;
+                                } else if (dataType === 'float' || dataType === 'double') {
+                                    value = parseFloat(input.value) || 0.0;
+                                } else {
+                                    value = input.value;
+                                }
+                                
+                                data[fieldName] = value;
+                            });
+                            
+                            if (Object.keys(data).length === 0) {
+                                alert('⚠️ 请先选择配置并填写数据');
+                                return;
+                            }
+                            
+                            const response = await fetch('/api/publish', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ messageType: messageType, topic: messageType, data: data })
+                            });
+                            const result = await response.json();
+                            if (result.success) {
+                                alert(\`✅ 发送成功！\\n主题: \${result.topic}\\n大小: \${result.size} 字节\`);
+                            } else {
+                                alert(\`❌ 发送失败: \${result.error}\`);
+                            }
+                            return;
+                        }
+                        
+                        // 其他消息类型的处理
+                        const msg = messagesData.value.serverMessages.find(m => m.name === messageType);
+                        if (!msg) return;
+                        const data = {};
+                        for (const [fieldName, fieldMeta] of Object.entries(msg.metadata.fields)) {
+                            const inputId = \`input-\${messageType}-\${fieldName}\`;
+                            const inputElement = document.getElementById(inputId);
+                            if (!inputElement) continue;
+                            const dataType = inputElement.getAttribute('data-type');
+                            const isRepeated = inputElement.getAttribute('data-repeated') === 'true';
+                            let value = inputElement.value;
+                            if (isRepeated) {
+                                try { value = JSON.parse(value); } catch (e) { value = []; }
+                            } else if (dataType === 'bool') {
+                                value = inputElement.type === 'checkbox' ? inputElement.checked : (value === 'true');
+                            } else if (dataType === 'uint32' || dataType === 'int32') {
+                                value = parseInt(value) || 0;
+                            } else if (dataType === 'float' || dataType === 'double') {
+                                value = parseFloat(value) || 0.0;
+                            }
+                            data[fieldName] = value;
+                        }
+                        const response = await fetch('/api/publish', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ messageType: messageType, topic: messageType, data: data })
+                        });
+                        const result = await response.json();
+                        if (result.success) {
+                            alert(\`✅ 发送成功！\\n主题: \${result.topic}\\n大小: \${result.size} 字节\`);
+                        } else {
+                            alert(\`❌ 发送失败: \${result.error}\`);
+                        }
+                    } catch (error) {
+                        alert(\`❌ 错误: \${error.message}\`);
+                    }
+                }
+
+                function collectMessageData(messageType) {
+                    const msg = messagesData.value.serverMessages.find(m => m.name === messageType);
+                    if (!msg) return {};
+                    const data = {};
+                    for (const [fieldName, fieldMeta] of Object.entries(msg.metadata.fields)) {
+                        const inputId = 'input-' + messageType + '-' + fieldName;
+                        const inputElement = document.getElementById(inputId);
+                        if (!inputElement) continue;
+                        const dataType = inputElement.getAttribute('data-type');
+                        const isRepeated = inputElement.getAttribute('data-repeated') === 'true';
+                        let value = inputElement.value;
+                        if (isRepeated) {
+                            try { value = JSON.parse(value); } catch (e) { value = []; }
+                        } else if (dataType === 'bool') { value = value === 'true'; }
+                        else if (dataType === 'uint32' || dataType === 'int32') { value = parseInt(value) || 0; }
+                        else if (dataType === 'float' || dataType === 'double') { value = parseFloat(value) || 0.0; }
+                        data[fieldName] = value;
+                    }
+                    return data;
+                }
+
+                async function toggleAutoPublish(messageType) {
+                    try {
+                        const checkbox = document.getElementById('autoEnable-' + messageType);
+                        const freqInput = document.getElementById('autoFreq-' + messageType);
+                        const enabled = checkbox.checked;
+                        const freqHz = parseFloat(freqInput.value) || messagesData.value.messageDefaultFrequencies?.[messageType] || 1;
+                        const intervalMs = Math.round(1000 / freqHz);
+                        const data = collectMessageData(messageType);
+                        const response = await fetch('/api/auto-publish', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ messageType, enabled, intervalMs: intervalMs, topic: messageType, data })
+                        });
+                        const result = await response.json();
+                        if (!result.success) {
+                            alert('自动发送失败: ' + (result.error || 'unknown'));
+                            checkbox.checked = !enabled;
+                        }
+                    } catch (error) {
+                        alert('自动发送发生错误: ' + error.message);
+                    }
+                }
+
+                async function refreshHistory() {
+                    try {
+                        const response = await fetch('/api/uplink-history');
+                        const historyData = await response.json();
+                        history.value = historyData;
+
+                        if (historyData.length === 0) return;
+
+                        const latestMessages = {};
+                        historyData.forEach(item => {
+                            if (!latestMessages[item.messageType]) {
+                                latestMessages[item.messageType] = item;
+                            }
+                        });
+
+                        for (const [messageType, item] of Object.entries(latestMessages)) {
+                            if (item.parsedData) {
+                                if (!receivedValues[messageType]) receivedValues[messageType] = {};
+                                for (const [fieldName, fieldInfo] of Object.entries(item.parsedData)) {
+                                    receivedValues[messageType][fieldName] = {
+                                        display: fieldInfo.display,
+                                        description: fieldInfo.description,
+                                        time: new Date().toLocaleTimeString()
+                                    };
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.error('刷新历史记录失败:', error);
+                    }
+                }
+
+                onMounted(() => {
+                    loadMessages();
+                    setInterval(refreshHistory, 2000);
+                    loadConfigList();
                 });
-                const result = await response.json();
-                if (!result.success) {
-                    alert('自动发送失败: ' + (result.error || 'unknown'));
-                    checkbox.checked = !enabled; // revert
-                }
-                // Optional: update UI indicator
-            } catch (error) {
-                alert('自动发送发生错误: ' + error.message);
-            }
-        }
-        
-        // 更新自动发送状态
-        function updateAutoStatus() {
-            const indicator = document.getElementById('autoStatus');
-            if (!indicator) return; // 如果元素不存在则返回
-            
-            if (autoPublishActive) {
-                indicator.className = 'status-indicator status-active';
-            } else {
-                indicator.className = 'status-indicator status-inactive';
-            }
-        }
-        
-        // 更新上行消息接收到的数据显示
-        function updateUplinkReceivedData(messageType, parsedData) {
-            for (const [fieldName, fieldInfo] of Object.entries(parsedData)) {
-                const valueEl = document.getElementById('value-' + messageType + '-' + fieldName);
-                if (valueEl) {
-                    // 清空原有内容
-                    valueEl.innerHTML = '';
-                    
-                    // 创建值显示
-                    const valueDiv = document.createElement('div');
-                    valueDiv.className = 'field-value-received';
-                    valueDiv.textContent = fieldInfo.display;
-                    valueEl.appendChild(valueDiv);
-                    
-                    // 如果有描述，添加描述
-                    if (fieldInfo.description) {
-                        const descDiv = document.createElement('div');
-                        descDiv.className = 'field-value-desc';
-                        descDiv.textContent = '💡 ' + fieldInfo.description;
-                        valueEl.appendChild(descDiv);
-                    }
-                    
-                    // 添加时间戳
-                    const timeDiv = document.createElement('div');
-                    timeDiv.className = 'field-value-time';
-                    timeDiv.textContent = new Date().toLocaleTimeString();
-                    valueEl.appendChild(timeDiv);
-                }
-            }
-        }
-        
-        // 刷新历史记录
-        async function refreshHistory() {
-            try {
-                const response = await fetch('/api/uplink-history');
-                const history = await response.json();
                 
-                const container = document.getElementById('historyPanel');
-                
-                if (!container) return; // 如果容器不存在则返回
-                
-                if (history.length === 0) {
-                    container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">暂无消息</p>';
-                    return;
-                }
-                
-                // 更新上行消息块中的最新数据
-                const latestMessages = {};
-                history.forEach(item => {
-                    if (!latestMessages[item.messageType]) {
-                        latestMessages[item.messageType] = item;
-                    }
-                });
-                
-                // 更新每个消息类型的最新接收数据
-                for (const [messageType, item] of Object.entries(latestMessages)) {
-                    if (item.parsedData) {
-                        updateUplinkReceivedData(messageType, item.parsedData);
+                // 加载配置列表到选择器
+                async function loadConfigList() {
+                    try {
+                        const response = await fetch('/api/list-configs');
+                        const result = await response.json();
+                        if (result.success && result.configs.length > 0) {
+                            const selector = document.getElementById('custom-config-selector');
+                            if (selector) {
+                                result.configs.forEach(config => {
+                                    const option = document.createElement('option');
+                                    option.value = config.name;
+                                    option.textContent = config.name;
+                                    selector.appendChild(option);
+                                });
+                            }
+                        }
+                    } catch (error) {
+                        console.error('加载配置列表失败:', error);
                     }
                 }
                 
-                // 构建历史记录显示
-                let html = '';
-                history.forEach(item => {
-                    // 构建解析后的数据显示
-                    let dataDisplay = '';
-                    if (item.parsedData && Object.keys(item.parsedData).length > 0) {
-                        dataDisplay = '<div style="margin-top: 8px;">';
-                        for (const [fieldName, fieldInfo] of Object.entries(item.parsedData)) {
-                            dataDisplay += \`
-                                <div class="field-display">
-                                    <span class="field-display-name">\${fieldName}:</span>
-                                    <span class="field-display-value">\${fieldInfo.display}</span>
-                                    \${fieldInfo.description ? \`<div class="field-display-desc">💡 \${fieldInfo.description}</div>\` : ''}
+                // 全局函数：加载自定义配置
+                window.loadCustomConfig = async function(configName) {
+                    if (!configName) {
+                        // 清空字段
+                        const container = document.querySelector('.message-item');
+                        if (container) {
+                            const fieldList = container.querySelector('.field-list');
+                            if (fieldList) {
+                                const opArea = fieldList.querySelector('.op-area');
+                                fieldList.innerHTML = opArea ? opArea.outerHTML : '';
+                            }
+                        }
+                        return;
+                    }
+                    
+                    try {
+                        // 加载proto文件
+                        const protoResponse = await fetch(\`/api/load-proto?name=\${encodeURIComponent(configName)}\`);
+                        const protoResult = await protoResponse.json();
+                        
+                        if (!protoResult.success) {
+                            alert(\`❌ 加载Proto失败: \${protoResult.error}\`);
+                            return;
+                        }
+                        
+                        // 解析proto内容获取字段（包括注释中的范围信息）
+                        const protoContent = protoResult.content;
+                        const lines = protoContent.split('\\n');
+                        const fields = [];
+                        
+                        for (let i = 0; i < lines.length; i++) {
+                            const line = lines[i];
+                            // 匹配字段定义: type name = number; // comment
+                            const fieldMatch = line.match(/^\\s+(\\w+)\\s+(\\w+)\\s*=\\s*(\\d+);(.*)$/);
+                            if (fieldMatch) {
+                                const type = fieldMatch[1];
+                                const name = fieldMatch[2];
+                                const comment = fieldMatch[4].trim();
+                                
+                                // 跳过padding字段
+                                if (name === '_padding') continue;
+                                
+                                // 解析范围信息
+                                let min = undefined, max = undefined;
+                                const rangeMatch = comment.match(/范围:\\s*\\[([^,]+),\\s*([^\\]]+)\\]/);
+                                if (rangeMatch) {
+                                    min = rangeMatch[1] === '-∞' ? undefined : parseFloat(rangeMatch[1]);
+                                    max = rangeMatch[2] === '+∞' ? undefined : parseFloat(rangeMatch[2]);
+                                }
+                                
+                                fields.push({ name, type, min, max, comment });
+                            }
+                        }
+                        
+                        if (fields.length === 0) {
+                            alert('⚠️ 未找到有效字段');
+                            return;
+                        }
+                        
+                        // 查找CustomByteBlock消息容器
+                        let container = null;
+                        const messageItems = document.querySelectorAll('.message-item');
+                        messageItems.forEach(item => {
+                            const nameElement = item.querySelector('.message-name');
+                            if (nameElement && (nameElement.textContent.includes('CustomByteBlock') || nameElement.textContent.includes('自定义数据块'))) {
+                                container = item;
+                            }
+                        });
+                        
+                        if (!container) {
+                            alert('❌ 未找到CustomByteBlock消息容器');
+                            return;
+                        }
+                        
+                        const fieldList = container.querySelector('.field-list');
+                        if (!fieldList) {
+                            alert('❌ 未找到字段列表容器');
+                            return;
+                        }
+                        
+                        // 保存操作按钮
+                        const opArea = fieldList.querySelector('.op-area');
+                        const opAreaHtml = opArea ? opArea.outerHTML : '';
+                        
+                        // 重新生成字段输入框
+                        let html = '';
+                        fields.forEach(field => {
+                            const inputId = \`input-CustomByteBlock-\${field.name}\`;
+                            const inputType = (field.type === 'float' || field.type === 'double') ? 'number' : 
+                                            (field.type === 'bool') ? 'checkbox' : 'number';
+                            const step = (field.type === 'float' || field.type === 'double') ? '0.01' : '1';
+                            const minAttr = field.min !== undefined ? \`min="\${field.min}"\` : '';
+                            const maxAttr = field.max !== undefined ? \`max="\${field.max}"\` : '';
+                            const rangeInfo = (field.min !== undefined || field.max !== undefined) 
+                                ? \`范围: [\${field.min ?? '-∞'}, \${field.max ?? '+∞'}]\` 
+                                : '';
+                            
+                            html += \`
+                                <div class="field-item">
+                                    <div class="field-left">
+                                        <span class="field-name">\${field.name}</span>
+                                        <span class="field-type">(\${field.type})</span>
+                                        \${rangeInfo ? \`<div class="field-comment">\${rangeInfo}</div>\` : ''}
+                                    </div>
+                                    <div class="field-right">
+                                        <div class="field-input-section" onclick="event.stopPropagation()">
+                                            <label class="field-input-label" for="\${inputId}">✏️ 输入值</label>
+                                            \${field.type === 'bool' 
+                                                ? \`<input type="checkbox" class="field-input" id="\${inputId}" data-type="\${field.type}">\`
+                                                : \`<input type="\${inputType}" step="\${step}" class="field-input" id="\${inputId}" 
+                                                       data-type="\${field.type}" placeholder="0" value="0" \${minAttr} \${maxAttr}>\`
+                                            }
+                                        </div>
+                                    </div>
                                 </div>
                             \`;
-                        }
-                        dataDisplay += '</div>';
-                    } else {
-                        dataDisplay = \`<div class="history-data">\${JSON.stringify(item.data, null, 2)}</div>\`;
+                        });
+                        
+                        // 添加操作按钮（如果存在）
+                        html += opAreaHtml;
+                        
+                        fieldList.innerHTML = html;
+                        
+                        // 存储当前配置名称到容器属性，供发送时使用
+                        container.setAttribute('data-config-name', configName);
+                        
+                        console.log(\`✅ 已加载配置: \${configName}，共 \${fields.length} 个字段\`);
+                        
+                    } catch (error) {
+                        console.error('加载配置失败:', error);
+                        alert(\`❌ 加载配置失败: \${error.message}\`);
                     }
-                    
-                    html += \`
-                        <div class="history-item">
-                            <div class="history-header">
-                                <div>
-                                    <span class="history-type">\${item.messageType}</span>
-                                    <span style="color: #999; font-size: 12px;">客户端: \${item.clientId}</span>
-                                </div>
-                                <span class="history-time">\${new Date(item.timestamp).toLocaleString('zh-CN')}</span>
-                            </div>
-                            \${dataDisplay}
-                        </div>
-                    \`;
-                });
-                
-                container.innerHTML = html;
-            } catch (error) {
-                console.error('刷新历史记录失败:', error);
+                };
+
+                return {
+                    currentTab,
+                    messagesData, activeMessage, receivedValues, history, autoPublishActive,
+                    uplinkCount, downlinkCount,
+                    loadMessages, toggleMessage, refreshHistory,
+                    generateFieldInput, sendDownlinkMessage, toggleAutoPublish
+                };
             }
-        }
-        
-        // 切换消息展开/折叠
-        function toggleMessage(element) {
-            const wasActive = element.classList.contains('active');
-            
-            // 关闭同级所有展开的消息
-            const parent = element.parentElement;
-            parent.querySelectorAll('.message-item.active').forEach(item => {
-                item.classList.remove('active');
-            });
-            
-            // 如果之前不是展开状态，则展开
-            if (!wasActive) {
-                element.classList.add('active');
-            }
-        }
-        
-        // 初始化
-        loadMessages();
-        updateAutoStatus();
-        
-        // 定时刷新历史记录
-        setInterval(refreshHistory, 2000);
+        }).mount('#app');
     </script>
 </body>
 </html>`;

@@ -1,13 +1,15 @@
 {
   "name": "shark-data-server",
   "version": "2.0.0-Visual",
-  "description": "UDP视频流和MQTT数据发送模拟服务器",
-  "main": "js/UDPserver.js",
+  "description": "UDP视频流和MQTT数据发送模拟服务器 - 支持自定义数据块SDK生成",
+  "main": "js/mqtt-server-visual.js",
   "scripts": {
-    "start": "node js/UDPserver.js",
+    "start": "node js/mqtt-server-visual.js",
     "mqtt": "node js/mqtt-server.js",
     "mqtt-visual": "node js/mqtt-server-visual.js",
     "udp": "node js/UDPserver.js",
+    "compile": "npx tsc",
+    "dev": "npx tsc && node js/mqtt-server-visual.js",
     "proto": "pbjs -t static-module -w commonjs -o proto/messages.js proto/messages.proto && pbts -o proto/messages.d.ts proto/messages.js"
   },
   "keywords": [
@@ -16,19 +18,33 @@
     "video-stream",
     "protobuf",
     "hevc",
-    "robomaster"
+    "robomaster",
+    "sdk-generator",
+    "embedded-c",
+    "stm32",
+    "arm"
   ],
   "author": "MeroT",
   "license": "ISC",
   "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@ffprobe-installer/ffprobe": "^1.4.1",
     "aedes": "^0.50.0",
     "fluent-ffmpeg": "^2.1.3",
     "mqtt": "^5.3.5",
-    "protobufjs": "^7.2.6",
-    "@ffmpeg-installer/ffmpeg": "^1.1.0",
-    "@ffprobe-installer/ffprobe": "^1.4.1"
+    "protobufjs": "^7.2.6"
   },
   "devDependencies": {
-    "protobufjs-cli": "^1.1.2"
+    "protobufjs-cli": "^1.1.2",
+    "typescript": "^5.9.3",
+    "@types/node": "^22.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JNU-SHARK/SharkDataSever.git"
   }
 }

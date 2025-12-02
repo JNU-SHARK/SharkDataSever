@@ -1,0 +1,504 @@
+/* 全局重置与基础样式 */
+[v-cloak] { display: none; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body { 
+    font-family: 'Microsoft YaHei', 'Segoe UI', Arial, sans-serif; 
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+    min-height: 100vh; 
+    padding: 20px; 
+}
+
+.container { 
+    max-width: 1600px; 
+    margin: 0 auto; 
+}
+
+/* 头部样式 */
+header { 
+    background: white; 
+    padding: 20px 30px; 
+    border-radius: 10px; 
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+    margin-bottom: 20px; 
+}
+
+h1 { 
+    color: #333; 
+    font-size: 28px; 
+    margin-bottom: 10px; 
+}
+
+.subtitle { 
+    color: #666; 
+    font-size: 14px; 
+}
+
+/* 导航栏样式 */
+nav {
+    background: white;
+    padding: 10px 20px;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    display: flex;
+    gap: 10px;
+}
+
+/* 主内容区域 */
+.main-content { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 20px; 
+}
+
+/* 面板样式 */
+.panel { 
+    background: white; 
+    border-radius: 10px; 
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+    overflow: hidden; 
+    margin-bottom: 20px; 
+}
+
+.panel-header { 
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+    color: white; 
+    padding: 15px 20px; 
+    font-size: 18px; 
+    font-weight: bold; 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+}
+
+.panel-body { 
+    padding: 20px; 
+    max-height: 600px; 
+    overflow-y: auto; 
+}
+
+/* 消息项样式 */
+.message-item { 
+    border: 1px solid #e0e0e0; 
+    border-radius: 8px; 
+    padding: 15px; 
+    margin-bottom: 15px; 
+    cursor: pointer; 
+    transition: all 0.3s; 
+}
+
+.message-item:hover { 
+    border-color: #667eea; 
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2); 
+}
+
+.message-item.active { 
+    border-color: #667eea; 
+    background: #f0f4ff; 
+}
+
+.message-name { 
+    font-size: 16px; 
+    font-weight: bold; 
+    color: #333; 
+    margin-bottom: 5px; 
+}
+
+.message-desc { 
+    font-size: 13px; 
+    color: #666; 
+    margin-bottom: 10px; 
+}
+
+/* 字段列表 */
+.field-list { 
+    margin-top: 10px; 
+    display: none; 
+}
+
+.message-item.active .field-list { 
+    display: block; 
+}
+
+.field-item { 
+    background: #f8f9fa; 
+    padding: 8px 12px; 
+    border-radius: 5px; 
+    margin-bottom: 8px; 
+    font-size: 12px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: flex-start; 
+    flex-wrap: wrap; 
+}
+
+.field-left { 
+    flex: 1; 
+    min-width: 200px; 
+}
+
+.field-right { 
+    margin-left: 10px; 
+    min-width: 150px; 
+}
+
+.field-right.received { 
+    background: #e8f5e9; 
+    padding: 4px 10px; 
+    border-radius: 4px; 
+    border-left: 3px solid #28a745; 
+}
+
+.field-name { 
+    font-weight: bold; 
+    color: #667eea; 
+}
+
+.field-type { 
+    color: #999; 
+    font-style: italic; 
+}
+
+.field-comment { 
+    color: #666; 
+    margin-top: 3px; 
+}
+
+/* 字段值显示 */
+.field-value-received { 
+    color: #1565c0; 
+    font-weight: bold; 
+    font-size: 14px; 
+    margin-bottom: 4px; 
+}
+
+.field-value-desc { 
+    color: #666; 
+    font-size: 11px; 
+    margin-top: 4px; 
+    font-style: italic; 
+}
+
+.field-value-time { 
+    color: #999; 
+    font-size: 10px; 
+    margin-top: 4px; 
+    text-align: right; 
+}
+
+.field-value-empty {
+    color: #999;
+    font-style: italic;
+    font-size: 12px;
+}
+
+/* 字段输入区域 */
+.field-input-section { 
+    background: #fff3cd; 
+    padding: 8px 10px; 
+    border-radius: 4px; 
+    border-left: 3px solid #ffc107; 
+    margin-left: 10px; 
+    min-width: 150px; 
+}
+
+.field-input-label { 
+    font-size: 11px; 
+    color: #856404; 
+    font-weight: bold; 
+    margin-bottom: 5px; 
+    display: block; 
+}
+
+.field-input, .field-select { 
+    width: 100%; 
+    padding: 6px 8px; 
+    border: 1px solid #ddd; 
+    border-radius: 3px; 
+    font-size: 12px; 
+    min-height: 28px; 
+}
+
+.field-input {
+    font-family: 'Consolas', 'Monaco', monospace;
+    line-height: 1.4;
+}
+
+.field-select {
+    background: white;
+    line-height: 1.4;
+}
+
+/* 按钮样式 */
+.btn { 
+    padding: 10px 20px; 
+    border: none; 
+    border-radius: 5px; 
+    font-size: 14px; 
+    font-weight: bold; 
+    cursor: pointer; 
+    transition: all 0.3s; 
+}
+
+.btn-primary { 
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+    color: white; 
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+}
+
+.btn-danger { 
+    background: #dc3545; 
+    color: white; 
+}
+
+.btn-danger:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(220, 53, 69, 0.3);
+}
+
+.btn-success { 
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%); 
+    color: white; 
+}
+
+.btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+}
+
+.btn-secondary { 
+    background: #6c757d; 
+    color: white; 
+}
+
+.btn-secondary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(108, 117, 125, 0.3);
+}
+
+.send-message-btn { 
+    margin-top: 10px; 
+    padding: 8px 20px; 
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+    color: white; 
+    border: none; 
+    border-radius: 5px; 
+    font-size: 13px; 
+    font-weight: bold; 
+    cursor: pointer; 
+    width: 100%; 
+}
+
+.send-message-btn:hover { 
+    transform: translateY(-1px); 
+    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3); 
+}
+
+/* 表单样式 */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-label { 
+    display: block; 
+    margin-bottom: 5px; 
+    font-weight: bold; 
+    color: #333; 
+    font-size: 14px; 
+}
+
+.form-input { 
+    width: 100%; 
+    padding: 10px; 
+    border: 1px solid #ddd; 
+    border-radius: 5px; 
+    font-size: 14px; 
+}
+
+/* 历史记录样式 */
+.history-item { 
+    background: #f8f9fa; 
+    border-left: 4px solid #667eea; 
+    padding: 12px 15px; 
+    margin-bottom: 12px; 
+    border-radius: 5px; 
+}
+
+.history-header { 
+    display: flex; 
+    justify-content: space-between; 
+    margin-bottom: 8px; 
+    font-size: 13px; 
+}
+
+.history-type { 
+    font-weight: bold; 
+    color: #667eea; 
+}
+
+.history-time { 
+    color: #999; 
+    font-size: 12px; 
+}
+
+.history-data { 
+    background: white; 
+    padding: 10px; 
+    border-radius: 4px; 
+    font-family: 'Consolas', 'Monaco', monospace; 
+    font-size: 12px; 
+    overflow-x: auto; 
+}
+
+.field-display { 
+    margin-bottom: 5px; 
+    padding: 5px; 
+    background: #f8f9fa; 
+    border-radius: 3px; 
+}
+
+.field-display-name { 
+    font-weight: bold; 
+    color: #495057; 
+    margin-right: 8px; 
+}
+
+.field-display-value { 
+    color: #007bff; 
+    font-weight: bold; 
+}
+
+.field-display-desc { 
+    color: #6c757d; 
+    font-size: 11px; 
+    margin-top: 2px; 
+}
+
+/* 徽章样式 */
+.badge { 
+    display: inline-block; 
+    padding: 3px 8px; 
+    border-radius: 12px; 
+    font-size: 11px; 
+    font-weight: bold; 
+    margin-left: 8px; 
+}
+
+.badge-up { 
+    background: #28a745; 
+    color: white; 
+}
+
+.badge-down { 
+    background: #007bff; 
+    color: white; 
+}
+
+/* 数据列表（自定义配置页面使用） */
+.data-list {
+    margin-top: 10px;
+}
+
+/* 数据大小进度条容器 */
+.size-progress-container {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.size-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.size-label {
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+}
+
+.size-value {
+    font-size: 16px;
+    font-weight: bold;
+    color: #28a745;
+    transition: color 0.3s;
+}
+
+.size-value.size-warning {
+    color: #dc3545;
+}
+
+.progress-bar-wrapper {
+    width: 100%;
+    height: 30px;
+    background: #e9ecef;
+    border-radius: 15px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+    border-radius: 15px;
+    transition: width 0.4s ease, background 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.progress-bar.progress-warning {
+    background: linear-gradient(90deg, #ffc107 0%, #ff9800 100%);
+}
+
+.progress-bar.progress-danger {
+    background: linear-gradient(90deg, #dc3545 0%, #c82333 100%);
+}
+
+.progress-text {
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+/* 配置列表项样式 */
+.config-item {
+    cursor: pointer;
+    padding: 10px;
+    margin-bottom: 5px;
+    background: white;
+    border-radius: 5px;
+    border: 2px solid #e0e0e0;
+    transition: all 0.2s;
+}
+
+.config-item:hover {
+    border-color: #0066cc;
+    box-shadow: 0 2px 6px rgba(0, 102, 204, 0.2);
+    transform: translateX(2px);
+}
+
+.config-item-active {
+    border-color: #0066cc !important;
+    background: #f0f8ff !important;
+    box-shadow: 0 2px 8px rgba(0, 102, 204, 0.3) !important;
+}
+
+/* 页脚样式 */
+footer {
+    text-align: center;
+    padding: 20px 0 30px 0;
+    color: #999;
+    font-size: 12px;
+}

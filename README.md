@@ -16,6 +16,8 @@
 - [服务说明](#-服务说明)
 - [UDP 数据格式](#-udp-数据格式)
 - [MQTT 协议说明](#-mqtt-协议说明)
+- [自定义数据块 SDK](#-自定义数据块-sdk)
+- [ImageBlock 图片传输协议](#-imageblock-图片传输协议)
 - [使用示例](#-使用示例)
 - [常见问题](#-常见问题)
 
@@ -36,6 +38,8 @@ SharkDataServer 是一个完整的 RoboMaster 2026 赛事模拟服务器，提�
 ✅ **可视化调试** - Web 界面实时查看和发送 MQTT 消息  
 ✅ **完整协议** - 覆盖 20+ 上行/下行消息类型  
 ✅ **即插即用** - 一键启动器，自动环境检测  
+✅ **SDK 生成** - 自动生成 STM32/ARM 嵌入式 C SDK  
+✅ **图片传输** - 支持 ImageBlock 协议，128 字节高效图片分块传输  
 
 ---
 
@@ -97,7 +101,9 @@ SharkDataSever/
 ├── .gitignore
 │
 ├── docs/                      # 📚 文档目录
-│   └── Protocol.md            # MQTT 协议详细说明（完整版）
+│   ├── Protocol.md            # MQTT 协议详细说明（完整版）
+│   ├── ImageBlock_Usage.md    # 图片块协议使用指南
+│   └── ImageBlock_UI_Guide.md # 图片块 UI 配置说明
 │
 ├── js/                        # 💻 JavaScript 源代码
 │   ├── README.md
@@ -119,6 +125,20 @@ SharkDataSever/
 │   ├── messages.proto             # Protobuf 消息定义
 │   ├── messages.js                # 编译后的 JS 模块
 │   └── messages.d.ts              # TypeScript 类型定义
+│
+├── frontend/                  # 🎨 前端配置界面
+│   ├── src/
+│   │   └── components/
+│   │       └── CustomDataConfig.ts   # 自定义数据块配置组件
+│   ├── dist/                         # 编译输出目录
+│   └── tsconfig.json                 # TypeScript 配置
+│
+├── sdk/                       # 🔧 生成的 C SDK 输出目录
+│   ├── <配置名>/
+│   │   ├── custom_data.h             # 数据结构定义
+│   │   ├── custom_data.c             # 函数实现
+│   │   └── messages.proto            # Proto 定义文件
+│   └── ...
 │
 ├── VideoSource/               # 🎬 视频源文件
 │   └── shark.h265                 # HEVC 格式测试视频
@@ -448,6 +468,261 @@ client.on('message', (topic, message) => {
 
 ---
 
+## 🛠️ 自定义数据块 SDK
+
+### 功能概述
+
+本系统提供**可视化配置界面**和**自动 SDK 生成**功能，用于快速创建符合 RoboMaster 协议的自定义数据块。
+
+**核心优势：**
+- ✅ **零代码配置** - Web 界面拖拽式配置，无需手写代码
+- ✅ **自动生成** - 生成 C/Proto 代码，包含完整的打包、校验和 CRC 计算
+- ✅ **双结构设计** - 自动区分含图片和不含图片的数据结构，优化内存占用
+- ✅ **类型安全** - 自动生成类型定义和校验函数
+- ✅ **150字节保证** - 自动计算并验证数据大小，确保符合协议要求
+
+### 使用流程
+
+#### 1. 启动 MQTT 可视化服务
+
+```bash
+# Windows
+runner.bat  # 选择 "1. 启动 MQTT 可视化服务端"
+
+# Linux/Mac
+./runner.sh
+```
+
+访问 http://127.0.0.1:2026，在界面上方找到"自定义数据块配置"选项卡。
+
+#### 2. 配置数据字段
+
+**支持的数据类型：**
+| 类型 | 大小 | 说明 | 示例 |
+|------|------|------|------|
+| `uint8` | 1B | 无符号 8 位整数 | 0-255 |
+| `int8` | 1B | 有符号 8 位整数 | -128~127 |
+| `uint16` | 2B | 无符号 16 位整数 | 0-65535 |
+| `int16` | 2B | 有符号 16 位整数 | -32768~32767 |
+| `uint32` | 4B | 无符号 32 位整数 | 温度、速度 |
+| `int32` | 4B | 有符号 32 位整数 | 位置坐标 |
+| `float` | 4B | 单精度浮点数 | 36.5 |
+| `double` | 8B | 双精度浮点数 | 高精度测量 |
+| `bytes` | 自定义 | 字节数组 | 原始数据 |
+| `image_block` | 128B | 图片块协议 | 图片传输 |
+
+**配置示例：**
+```
+配置名称: 步兵
+字段列表:
+  - 名称: temperature, 类型: float
+  - 名称: speed, 类型: uint32
+  - 名称: position_x, 类型: int32
+  - 名称: position_y, 类型: int32
+  - 名称: image_block, 类型: image_block (可选)
+```
+
+#### 3. 生成 SDK
+
+点击"生成 SDK"按钮，系统会自动生成：
+
+```
+sdk/步兵/
+├── custom_data.h          # 数据结构定义
+├── custom_data.c          # 函数实现
+└── messages.proto         # Protobuf 定义
+```
+
+#### 4. 使用生成的 SDK
+
+**无图片模式（纯数据）：**
+```c
+#include "custom_data.h"
+
+// 定义数据
+CustomData_t data = {0};
+data.temperature = 36.5f;
+data.speed = 120;
+data.position_x = 1000;
+data.position_y = -500;
+
+// 打包发送（159字节完整帧）
+CustomData_Write(&data);
+uint8_t *frame = CustomData_Pack(seq++);
+HAL_UART_Transmit(&huart1, frame, 159, 100);
+```
+
+**有图片模式：**
+```c
+#include "custom_data.h"
+
+// 定义含图片的数据
+CustomDataWithImage_t data = {0};
+data.temperature = 36.5f;
+data.speed = 120;
+
+// 填充图片块（128字节）
+ImageBlock_Fill(&data.image_block, 
+                img_id, block_idx, total_blocks,
+                img_buffer, data_len, is_end);
+
+// 打包发送（159字节完整帧）
+CustomDataWithImage_Write(&data);
+uint8_t *frame = CustomDataWithImage_Pack(seq++);
+HAL_UART_Transmit(&huart1, frame, 159, 100);
+```
+
+### 生成代码特性
+
+生成的 C SDK 包含以下功能：
+
+1. **自动 CRC 计算** - 内置 CRC8 (DNP) 和 CRC16 (XMODEM) 查找表
+2. **帧结构封装** - 自动添加 SOF (0xA5)、CMD_ID (0x0302)、序列号、CRC16
+3. **内存优化** - 使用静态缓冲区，避免动态分配
+4. **双结构支持** - `CustomData_t` (不含图片) 和 `CustomDataWithImage_t` (含图片)
+5. **字节序处理** - 自动处理大小端转换
+6. **完整注释** - 中文注释，易于理解和维护
+
+---
+
+## 🖼️ ImageBlock 图片传输协议
+
+### 协议设计
+
+ImageBlock 是嵌入在自定义数据块中的图片分块传输协议，**复用外层的 SOF 和 CRC16 保护**，消除冗余校验。
+
+**结构定义（128 字节）：**
+```c
+typedef struct {
+    uint8_t cmd_type;         // 命令类型 (0x02=数据块, 0x03=结束帧)
+    uint16_t img_id;          // 图片ID (唯一标识)
+    uint16_t block_idx;       // 当前块索引 (从0开始)
+    uint16_t total_block;     // 总块数
+    uint8_t data_len;         // 有效数据长度 (1-120字节)
+    uint8_t data[120];        // 数据块 (不足部分填0)
+} ImageBlock_t;  // 总计 128 字节
+```
+
+**设计优势：**
+- ✅ **消除冗余** - 移除独立的 SOF 和 CRC16，从 131B 优化到 128B
+- ✅ **节省空间** - 伴随数据可用空间增加到 **22 字节** (150 - 128)
+- ✅ **分层保护** - 依赖外层协议的完整性校验
+- ✅ **定长设计** - 适合 DMA 接收，无需动态内存分配
+
+### 传输流程
+
+**1. 图片分块**
+```c
+// 假设图片大小为 5000 字节
+uint16_t total_blocks = (image_size + 119) / 120;  // 向上取整
+uint16_t img_id = generate_unique_id();            // 生成唯一ID
+
+for (uint16_t i = 0; i < total_blocks; i++) {
+    uint8_t data_len = (i == total_blocks - 1) 
+                       ? (image_size % 120) 
+                       : 120;
+    
+    CustomDataWithImage_t data = {0};
+    data.temperature = get_temperature();  // 伴随数据
+    
+    ImageBlock_Fill(&data.image_block,
+                    img_id, i, total_blocks,
+                    image_buffer + i * 120, data_len, 
+                    (i == total_blocks - 1));  // 最后一块设置结束标志
+    
+    CustomDataWithImage_Write(&data);
+    uint8_t *frame = CustomDataWithImage_Pack(seq++);
+    send_uart(frame, 159);
+    delay_ms(10);  // 避免拥塞
+}
+```
+
+**2. 客户端重组**
+```javascript
+// Protobuf 定义
+message ImageBlock {
+    fixed32 cmd_type = 1;      // 1B
+    fixed32 img_id = 2;        // 2B
+    fixed32 block_idx = 3;     // 2B
+    fixed32 total_block = 4;   // 2B
+    fixed32 data_len = 5;      // 1B
+    bytes data = 6;            // 120B
+}
+
+// 接收和重组
+const imageBuffers = new Map();
+
+client.on('message', (topic, message) => {
+    const customData = CustomByteBlock.decode(message);
+    
+    if (customData.image_block) {
+        const block = customData.image_block;
+        const imgId = block.img_id;
+        
+        if (!imageBuffers.has(imgId)) {
+            imageBuffers.set(imgId, {
+                blocks: new Array(block.total_block),
+                received: 0
+            });
+        }
+        
+        const imgData = imageBuffers.get(imgId);
+        imgData.blocks[block.block_idx] = Buffer.from(block.data).slice(0, block.data_len);
+        imgData.received++;
+        
+        // 检查是否接收完整
+        if (imgData.received === block.total_block || block.cmd_type === 0x03) {
+            const completeImage = Buffer.concat(imgData.blocks);
+            saveImage(imgId, completeImage);
+            imageBuffers.delete(imgId);
+        }
+    }
+});
+```
+
+### 伴随数据配置
+
+在配置界面中，当选择 `image_block` 类型时，会显示**独立的伴随数据配置面板**：
+
+**可用空间：22 字节**（150 - 128）
+
+**示例配置：**
+```
+图片块伴随数据:
+  - temperature (float, 4B)   - 当前温度
+  - speed (uint16, 2B)        - 当前速度
+  - status (uint8, 1B)        - 状态标志
+总计: 7 字节 / 22 字节
+```
+
+**生成的结构：**
+```c
+// 不含图片的数据结构（纯数据）
+typedef struct {
+    float temperature;
+    uint16_t speed;
+    uint8_t status;
+    uint8_t _padding[143];  // 填充到 150 字节
+} CustomData_t;
+
+// 含图片的数据结构
+typedef struct {
+    float temperature;      // 伴随数据
+    uint16_t speed;
+    uint8_t status;
+    ImageBlock_t image_block;  // 128 字节
+    uint8_t _padding[15];   // 填充到 150 字节
+} CustomDataWithImage_t;
+```
+
+### 完整文档
+
+详细使用说明请参考：
+- **协议文档**: [docs/ImageBlock_Usage.md](docs/ImageBlock_Usage.md)
+- **UI 配置**: [docs/ImageBlock_UI_Guide.md](docs/ImageBlock_UI_Guide.md)
+
+---
+
 ## 💡 使用示例
 
 ### 场景 1: 开发客户端控制程序
@@ -521,6 +796,75 @@ runner.bat  # 选择 "4. 启动双服务模式"
 3. 使用 Web 界面 (http://127.0.0.1:2026) 调试 MQTT 消息
 
 4. 使用你的客户端程序接收 UDP 视频流
+
+---
+
+### 场景 4: 生成自定义数据块 SDK
+
+1. 启动 MQTT 可视化服务
+```bash
+runner.bat  # 选择 "1. 启动 MQTT 可视化服务端"
+```
+
+2. 访问 http://127.0.0.1:2026，切换到"自定义数据块配置"选项卡
+
+3. 配置数据字段：
+```
+配置名称: 哨兵
+字段:
+  - name: temperature, type: float
+  - name: yaw_angle, type: int16
+  - name: pitch_angle, type: int16
+  - name: ammo_count, type: uint16
+  - name: image_block, type: image_block
+```
+
+4. 点击"生成 SDK"，在 `sdk/哨兵/` 目录获取生成的代码
+
+5. 在 STM32 项目中使用：
+```c
+#include "custom_data.h"
+
+// 发送传感器数据（无图片）
+void send_sensor_data(void) {
+    CustomData_t data = {0};
+    data.temperature = get_temperature();
+    data.yaw_angle = get_yaw();
+    data.pitch_angle = get_pitch();
+    data.ammo_count = get_ammo();
+    
+    CustomData_Write(&data);
+    uint8_t *frame = CustomData_Pack(seq++);
+    HAL_UART_Transmit(&huart1, frame, 159, 100);
+}
+
+// 发送图片数据
+void send_image_with_data(uint8_t *img_buf, uint32_t img_size) {
+    uint16_t total_blocks = (img_size + 119) / 120;
+    uint16_t img_id = generate_image_id();
+    
+    for (uint16_t i = 0; i < total_blocks; i++) {
+        CustomDataWithImage_t data = {0};
+        data.temperature = get_temperature();
+        data.yaw_angle = get_yaw();
+        data.pitch_angle = get_pitch();
+        data.ammo_count = get_ammo();
+        
+        uint8_t len = (i == total_blocks - 1) 
+                      ? (img_size % 120) : 120;
+        
+        ImageBlock_Fill(&data.image_block,
+                        img_id, i, total_blocks,
+                        img_buf + i * 120, len,
+                        (i == total_blocks - 1));
+        
+        CustomDataWithImage_Write(&data);
+        uint8_t *frame = CustomDataWithImage_Pack(seq++);
+        HAL_UART_Transmit(&huart1, frame, 159, 100);
+        HAL_Delay(10);
+    }
+}
+```
 
 ---
 
@@ -678,9 +1022,137 @@ lsof -i :3334
 
 ---
 
+### Q11: 自定义数据块超过 150 字节怎么办？
+
+**A:** 
+
+系统会**自动校验**并阻止超过 150 字节的配置：
+
+1. **实时计算**：界面会实时显示已用空间
+2. **自动提示**：超过限制时显示红色警告
+3. **优化建议**：
+   - 使用更小的数据类型（如 `uint8` 代替 `uint32`）
+   - 移除不必要的字段
+   - 使用 `image_block` 时注意伴随数据限制（最多 22 字节）
+
+**示例：**
+```
+❌ 错误配置（超过 150 字节）:
+- data1: bytes[100]
+- data2: bytes[60]
+总计: 160 字节 > 150 字节 限制
+
+✅ 正确配置:
+- data1: bytes[100]
+- data2: bytes[40]
+- extra: uint32
+总计: 144 字节 < 150 字节
+```
+
+---
+
+### Q12: 生成的 SDK 代码在哪里？
+
+**A:** 
+
+生成的代码位于 `sdk/<配置名>/` 目录：
+
+```
+sdk/
+├── 步兵/
+│   ├── custom_data.h
+│   ├── custom_data.c
+│   └── messages.proto
+├── 哨兵/
+│   ├── custom_data.h
+│   ├── custom_data.c
+│   └── messages.proto
+└── ...
+```
+
+**使用方法：**
+1. 将 `custom_data.h` 和 `custom_data.c` 复制到 STM32 项目
+2. 在代码中 `#include "custom_data.h"`
+3. 调用 `CustomData_Pack()` 或 `CustomDataWithImage_Pack()` 函数
+
+---
+
+### Q13: ImageBlock 和普通字段有什么区别？
+
+**A:** 
+
+**ImageBlock (128 字节固定大小)：**
+- ✅ 专用于图片分块传输
+- ✅ 自动生成 `CustomDataWithImage_t` 结构
+- ✅ 包含分块元数据（img_id、block_idx、total_block 等）
+- ✅ 可配置伴随数据（最多 22 字节）
+
+**普通字段：**
+- ✅ 用于传感器数据、状态信息等
+- ✅ 灵活配置大小和类型
+- ✅ 最多可用 150 字节
+
+**推荐配置：**
+```
+含图片配置:
+  - image_block (128B)
+  - temperature (4B)
+  - speed (2B)
+  总计: 134B / 150B
+
+纯数据配置:
+  - temperature (4B)
+  - speed (4B)
+  - position_x (4B)
+  - position_y (4B)
+  - sensor_data: bytes[100]
+  总计: 116B / 150B
+```
+
+---
+
+### Q14: 如何更新已生成的 SDK？
+
+**A:** 
+
+1. **修改配置**：在 Web 界面修改字段
+2. **重新生成**：点击"生成 SDK"按钮
+3. **覆盖文件**：系统会自动覆盖 `sdk/<配置名>/` 目录下的文件
+4. **更新项目**：将新生成的 `.h` 和 `.c` 文件复制到 STM32 项目
+
+**注意事项：**
+- ⚠️ 修改字段顺序会影响数据解析
+- ⚠️ 建议保持字段名和类型一致
+- ⚠️ 重大修改时建议创建新配置名
+
+---
+
+### Q15: TypeScript 编译失败怎么办？
+
+**A:** 
+
+如果修改了 `frontend/src/components/CustomDataConfig.ts`：
+
+```bash
+# 重新编译
+npx tsc
+
+# 或使用 watch 模式（自动编译）
+npx tsc --watch
+```
+
+**常见错误：**
+1. **语法错误**：检查 TypeScript 语法
+2. **类型错误**：确保变量类型正确
+3. **模块找不到**：运行 `npm install` 安装依赖
+
+---
+
 ## 📞 技术支持
 
 - **协议文档**: [docs/Protocol.md](docs/Protocol.md)
+- **ImageBlock 使用指南**: [docs/ImageBlock_Usage.md](docs/ImageBlock_Usage.md)
+- **ImageBlock UI 说明**: [docs/ImageBlock_UI_Guide.md](docs/ImageBlock_UI_Guide.md)
 - **Protobuf 定义**: [proto/messages.proto](proto/messages.proto)
 - **脚本说明**: [scripts/README.md](scripts/README.md)
 - **代码说明**: [js/README.md](js/README.md)
@@ -700,6 +1172,24 @@ ISC License
 ---
 
 ## 🔄 更新日志
+
+### v2.1.0 (2025-12-02)
+- ✨ **新增自定义数据块 SDK 生成功能**
+  - Web 可视化配置界面
+  - 自动生成 C/Proto 代码
+  - 支持 10+ 数据类型
+- ✨ **新增 ImageBlock 图片传输协议**
+  - 128 字节优化设计（移除冗余 SOF 和 CRC）
+  - 双结构支持（CustomData_t / CustomDataWithImage_t）
+  - 22 字节伴随数据空间
+  - 独立配置面板
+- ✨ **内存优化**
+  - 分离含图片和不含图片的数据结构
+  - 节省 128 字节静态内存（无图片时）
+- 📚 **完善文档**
+  - ImageBlock 使用指南
+  - ImageBlock UI 配置说明
+  - 更新 README
 
 ### v2.0.0 (2025-11-30)
 - ✨ 新增 MQTT 可视化 Web 界面

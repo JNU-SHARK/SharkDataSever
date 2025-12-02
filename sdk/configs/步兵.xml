@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomDataBlockConfig>
+  <Metadata>
+    <Name>步兵</Name>
+    <Description>测试文件</Description>
+    <CreatedAt>2025-12-02T10:37:59.542Z</CreatedAt>
+    <TotalSize unit="bytes">135</TotalSize>
+  </Metadata>
+  <Fields count="2">
+    <Field index="1">
+      <Name>re</Name>
+      <Type>float</Type>
+      <Size unit="bytes">4</Size>
+    </Field>
+    <Field index="2">
+      <Name>Image</Name>
+      <Type>image_block</Type>
+      <Size unit="bytes">0</Size>
+    </Field>
+  </Fields>
+</CustomDataBlockConfig>
