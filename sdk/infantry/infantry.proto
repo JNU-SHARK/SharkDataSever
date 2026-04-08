@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package custom_data;
+
+/**
+ * 自定义数据块消息
+ * 包含 150 字节的原始二进制数据，与裁判系统自定义数据块格式一致
+ * 
+ * 数据结构 (infantry):
+ *   - TestEnergy: int32_t (offset: 0, size: 4B)
+ *   - DetectFrame: ImageBlock (offset: 4, size: 128B)
+ *   - agtd: int8_t (offset: 132, size: 1B)
+ * 总数据大小: 133 字节 (填充至 150 字节)
+ */
+message CustomByteBlock {
+    // 150 字节原始二进制数据
+    bytes raw_data = 1;
+}

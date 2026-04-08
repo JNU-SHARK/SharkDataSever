@@ -74,8 +74,6 @@ nav {
 
 .panel-body { 
     padding: 20px; 
-    max-height: 600px; 
-    overflow-y: auto; 
 }
 
 /* 消息项样式 */
@@ -501,4 +499,441 @@ footer {
     padding: 20px 0 30px 0;
     color: #999;
     font-size: 12px;
+}
+
+/* ========== 自定义数据配置页面专用样式 ========== */
+
+/* 配置选择区域 */
+.custom-data-config .form-group {
+    margin-bottom: 20px;
+}
+
+.custom-data-config .form-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.custom-data-config .form-control {
+    width: 100%;
+    padding: 10px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.3s;
+    background: white;
+}
+
+.custom-data-config .form-control:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* 按钮组样式 */
+.custom-data-config .btn-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.custom-data-config .btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.custom-data-config .btn-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    box-shadow: 0 2px 6px rgba(40, 167, 69, 0.2);
+}
+
+.custom-data-config .btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.custom-data-config .btn-info {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    color: white;
+    box-shadow: 0 2px 6px rgba(23, 162, 184, 0.2);
+}
+
+.custom-data-config .btn-info:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3);
+}
+
+/* 配置面板通用样式 */
+.custom-data-config .panel {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s;
+}
+
+.custom-data-config .panel:hover {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.custom-data-config .panel-heading {
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.custom-data-config .panel-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.custom-data-config .panel-body {
+    padding: 24px;
+}
+
+/* 空间使用徽章 */
+.custom-data-config .badge {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: bold;
+    margin-left: 12px;
+}
+
+.custom-data-config .badge-success {
+    background: white;
+    color: #28a745;
+    box-shadow: 0 2px 6px rgba(40, 167, 69, 0.2);
+}
+
+.custom-data-config .badge-danger {
+    background: white;
+    color: #dc3545;
+    box-shadow: 0 2px 6px rgba(220, 53, 69, 0.2);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+/* 添加字段表单区域 */
+.custom-data-config .well {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.custom-data-config .well-sm {
+    padding: 18px;
+}
+
+.custom-data-config .well h5 {
+    margin: 0 0 15px 0;
+    color: #333;
+    font-size: 16px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.custom-data-config .well h5:before {
+    content: '';
+    width: 4px;
+    height: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 2px;
+}
+
+/* 表单行样式 */
+.custom-data-config .row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    margin: 0 -6px;
+}
+
+.custom-data-config .col-md-2,
+.custom-data-config .col-md-3,
+.custom-data-config .col-md-6 {
+    padding: 0 6px;
+}
+
+.custom-data-config .col-md-2 { flex: 0 0 16.66%; }
+.custom-data-config .col-md-3 { flex: 0 0 25%; }
+.custom-data-config .col-md-6 { flex: 0 0 50%; }
+
+/* 输入框样式 */
+.custom-data-config input[type="text"],
+.custom-data-config input[type="number"],
+.custom-data-config select {
+    width: 100%;
+    padding: 10px 14px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.3s;
+    background: white;
+}
+
+.custom-data-config input[type="text"]:focus,
+.custom-data-config input[type="number"]:focus,
+.custom-data-config select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.custom-data-config input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+.custom-data-config input[type="number"]::-webkit-outer-spin-button,
+.custom-data-config input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* 静态文本显示 */
+.custom-data-config .form-control-static {
+    padding-top: 10px;
+    font-size: 13px;
+    color: #666;
+    font-weight: bold;
+}
+
+/* 按钮样式细化 */
+.custom-data-config .btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
+}
+
+.custom-data-config .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.custom-data-config .btn-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+    color: white;
+    box-shadow: 0 2px 6px rgba(255, 193, 7, 0.3);
+}
+
+.custom-data-config .btn-warning:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4);
+}
+
+.custom-data-config .btn-block {
+    width: 100%;
+    display: block;
+}
+
+.custom-data-config .btn-xs {
+    padding: 6px 12px;
+    font-size: 12px;
+}
+
+.custom-data-config .btn-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+    box-shadow: 0 2px 6px rgba(220, 53, 69, 0.2);
+}
+
+.custom-data-config .btn-danger:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(220, 53, 69, 0.3);
+}
+
+/* 表格样式 */
+.custom-data-config table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 10px;
+}
+
+.custom-data-config .table {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.custom-data-config .table thead {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.custom-data-config .table thead th {
+    padding: 14px 16px;
+    font-weight: bold;
+    color: #495057;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.custom-data-config .table tbody tr {
+    transition: all 0.2s;
+}
+
+.custom-data-config .table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.custom-data-config .table tbody td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #e9ecef;
+    font-size: 14px;
+    color: #333;
+}
+
+.custom-data-config .table-striped tbody tr:nth-child(odd) {
+    background: #fafbfc;
+}
+
+.custom-data-config .table-bordered {
+    border: 1px solid #e9ecef;
+}
+
+/* 提示信息样式 */
+.custom-data-config .alert {
+    padding: 16px 20px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    border-left: 4px solid;
+}
+
+.custom-data-config .alert-warning {
+    background: #fff3cd;
+    border-left-color: #ffc107;
+    color: #856404;
+}
+
+.custom-data-config .alert-info {
+    background: #d1ecf1;
+    border-left-color: #17a2b8;
+    color: #0c5460;
+}
+
+.custom-data-config .alert-success {
+    background: #d4edda;
+    border-left-color: #28a745;
+    color: #155724;
+}
+
+/* 帮助文本 */
+.custom-data-config .help-block {
+    margin-top: 10px;
+    font-size: 13px;
+    color: #6c757d;
+    font-style: italic;
+    line-height: 1.6;
+}
+
+/* 双模式配置容器间距 */
+.custom-data-config .dual-mode-config {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* 渐变标题增强 */
+.custom-data-config .panel-heading[style*="linear-gradient"] {
+    position: relative;
+    overflow: hidden;
+}
+
+.custom-data-config .panel-heading[style*="linear-gradient"]:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.custom-data-config .panel:hover .panel-heading[style*="linear-gradient"]:before {
+    left: 100%;
+}
+
+/* 图标样式 */
+.custom-data-config .glyphicon {
+    margin-right: 6px;
+}
+
+/* 响应式调整 */
+@media (max-width: 1200px) {
+    .custom-data-config .col-md-2,
+    .custom-data-config .col-md-3,
+    .custom-data-config .col-md-6 {
+        flex: 0 0 100%;
+        margin-bottom: 10px;
+    }
+    
+    .custom-data-config .row {
+        flex-direction: column;
+    }
+}
+
+/* 加载动画 */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.custom-data-config .panel {
+    animation: fadeIn 0.4s ease-out;
+}
+
+/* 按钮禁用状态 */
+.custom-data-config .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* 表格操作按钮容器 */
+.custom-data-config .table tbody td:last-child {
+    white-space: nowrap;
+}
+
+/* Pull-right 工具类 */
+.custom-data-config .pull-right {
+    float: right;
+}
+
+/* 清除浮动 */
+.custom-data-config .clearfix:after {
+    content: "";
+    display: table;
+    clear: both;
 }

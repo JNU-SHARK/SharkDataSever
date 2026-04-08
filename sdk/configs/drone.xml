@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  CustomDataBlock 配置文件 - 无人机
+  
+  数据帧总大小: 150 字节 (固定)
+  传输模式由第一个字节决定:
+    0x00 = 纯数据模式 (Pure Data Mode)
+    0x01 = 图片传输模式 (Image Data Mode)
+-->
+<CustomDataBlockConfig>
+  <Metadata>
+    <Name>drone</Name>
+    <Description>无人机自定义数据</Description>
+    <CreatedAt>2025-12-03</CreatedAt>
+    <FrameSize unit="bytes">150</FrameSize>
+  </Metadata>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- 模式 0x00: 纯数据模式 (Pure Data Mode)                      -->
+  <!-- 帧结构: [Mode:1B] [DataFields:8B] [Padding:141B]            -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <PureDataMode>
+    <ModeValue>0x00</ModeValue>
+    <UsedBytes>9</UsedBytes>
+    <Layout>
+      <!-- 偏移 0x0000: 模式字节 -->
+      <Mode offset="0x0000" size="1">0x00</Mode>
+      <!-- 偏移 0x0001: altitude -->
+      <Field index="1" offset="0x0001">
+        <Name>altitude</Name>
+        <Type>float</Type>
+        <Size unit="bytes">4</Size>
+      </Field>
+      <!-- 偏移 0x0005: battery_voltage -->
+      <Field index="2" offset="0x0005">
+        <Name>battery_voltage</Name>
+        <Type>float</Type>
+        <Size unit="bytes">4</Size>
+      </Field>
+      <!-- 偏移 0x0009-0x0095: 填充字节 -->
+      <Padding offset="0x0009" size="141" />
+    </Layout>
+  </PureDataMode>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- 模式 0x01: 图片传输模式 (Image Data Mode)                   -->
+  <!-- 帧结构: [Mode:1B] [Companion:1B] [ImageBlock:128B] [Pad:20B] -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <ImageDataMode>
+    <ModeValue>0x01</ModeValue>
+    <UsedBytes>130</UsedBytes>
+    <Layout>
+      <!-- 偏移 0x0000: 模式字节 -->
+      <Mode offset="0x0000" size="1">0x01</Mode>
+      <!-- ─── 伴随数据字段 (Companion Fields) ─── -->
+      <CompanionField index="1" offset="0x0001">
+        <Name>altitude_low</Name>
+        <Type>int8_t</Type>
+        <Size unit="bytes">1</Size>
+      </CompanionField>
+      <!-- ─── ImageBlock 结构 (128 字节) ─── -->
+      <ImageBlock offset="0x0002" size="128">
+        <Name>drone_pic</Name>
+        <Structure>
+          <Field name="cmd_type"    offset="+0x00" type="uint8_t"  size="1" desc="命令类型: 0x02=数据块, 0x03=结束帧" />
+          <Field name="img_id"      offset="+0x01" type="uint16_t" size="2" desc="图片ID (小端序)" />
+          <Field name="block_idx"   offset="+0x03" type="uint16_t" size="2" desc="当前块索引" />
+          <Field name="total_block" offset="+0x05" type="uint16_t" size="2" desc="总块数" />
+          <Field name="data_len"    offset="+0x07" type="uint8_t"  size="1" desc="有效数据长度 (0-120)" />
+          <Field name="data"        offset="+0x08" type="uint8_t[120]" size="120" desc="图片数据块" />
+        </Structure>
+      </ImageBlock>
+      <!-- 偏移 0x0082-0x0095: 填充字节 -->
+      <Padding offset="0x0082" size="20" />
+    </Layout>
+  </ImageDataMode>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- 字段定义列表 (向后兼容)                                      -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <ImageCompanionFields>
+    <Field>altitude_low</Field>
+  </ImageCompanionFields>
+  <Fields count="3">
+    <Field index="1">
+      <Name>altitude</Name>
+      <Type>float</Type>
+      <ArraySize>1</ArraySize>
+      <Size unit="bytes">4</Size>
+    </Field>
+    <Field index="2">
+      <Name>battery_voltage</Name>
+      <Type>float</Type>
+      <ArraySize>1</ArraySize>
+      <Size unit="bytes">4</Size>
+    </Field>
+    <Field index="3">
+      <Name>drone_pic</Name>
+      <Type>ImageBlock</Type>
+      <ArraySize>1</ArraySize>
+      <Size unit="bytes">128</Size>
+    </Field>
+  </Fields>
+</CustomDataBlockConfig>

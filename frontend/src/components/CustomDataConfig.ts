@@ -260,7 +260,9 @@ export default {
                 <div v-if="items.length === 0" style="text-align: center; color: #999; padding: 20px;">
                     暂无配置数据
                 </div>
-                <div v-for="(item, index) in items" :key="index" class="message-item" style="display: flex; justify-content: space-between; align-items: center;">
+                <div v-for="(item, index) in items" :key="index" class="message-item" 
+                    style="display: flex; justify-content: space-between; align-items: center;"
+                    v-show="item.type !== 'image_block'">
                     <div style="flex: 1;">
                         <div class="message-name">{{ item.name }}</div>
                         <div class="message-desc">
@@ -363,7 +365,11 @@ export default {
         });
 
         const totalSize = computed(() => {
-            return items.value.reduce((sum: number, item: DataItem) => sum + getTypeSize(item.type, item.size), 0);
+            return items.value.reduce((sum: number, item: DataItem) => {
+                // 如果是图片块，不计入总大小（方便查看纯数据大小）
+                if (item.type === 'image_block') return sum;
+                return sum + getTypeSize(item.type, item.size);
+            }, 0);
         });
 
         const isValidNewItem = computed(() => {
@@ -481,7 +487,8 @@ export default {
             });
             
             // 计算已使用字节数并填充到150字节
-            const actualSize = totalSize.value;
+            // 注意：这里需要包含image_block的大小
+            const actualSize = items.value.reduce((sum: number, item: DataItem) => sum + getTypeSize(item.type, item.size), 0);
             const requiredSize = 150;
             if (actualSize < requiredSize) {
                 const paddingSize = requiredSize - actualSize;
@@ -574,10 +581,11 @@ export default {
                 hContent += '/**\n';
                 hContent += ' * @brief 纯数据结构（不含图片块）\n';
                 hContent += ' * @note 用于无图片传输场景，节省内存\n';
-                hContent += ` * @size ${nonImageSize} Bytes\n`;
+                hContent += ` * @size ${nonImageSize + 1} Bytes (1B类型 + ${nonImageSize}B数据)\n`;
                 hContent += ' */\n';
                 hContent += '#pragma pack(push, 1)\n';
                 hContent += 'typedef struct {\n';
+                hContent += '    uint8_t packet_type; // 0x00: 纯数据\n';
                 
                 nonImageFields.forEach((item: DataItem) => {
                     let cType;
@@ -617,13 +625,14 @@ export default {
                 hContent += '/**\n';
                 hContent += ' * @brief 含图片的数据结构\n';
                 hContent += ' * @note 用于图片传输场景，包含图片块和伴随数据\n';
-                hContent += ` * @size ${totalSize.value} Bytes (${nonImageSize}B数据 + 131B图片)\n`;
+                hContent += ` * @size ${imageBlockCompanionSize.value + 128 + 1} Bytes (1B类型 + ${imageBlockCompanionSize.value}B伴随数据 + 128B图片)\n`;
                 hContent += ' */\n';
                 hContent += '#pragma pack(push, 1)\n';
                 hContent += 'typedef struct {\n';
+                hContent += '    uint8_t packet_type; // 0x01: 含图片数据\n';
                 
                 // 先添加非图片字段（伴随数据）
-                nonImageFields.forEach((item: DataItem) => {
+                imageCompanionFields.value.forEach((item: DataItem) => {
                     let cType;
                     let arraySize = '';
                     
@@ -731,7 +740,7 @@ export default {
                 hContent += ' * @brief 写入含图片的数据\n';
                 hContent += ' * @param data 含图片的数据结构指针\n';
                 hContent += ' */\n';
-                hContent += 'static inline void CustomDataWithImage_Write(const CustomDataWithImage_t *data);\n\n';
+                hContent += 'void CustomDataWithImage_Write(const CustomDataWithImage_t *data);\n\n';
                 
                 hContent += '/**\n';
                 hContent += ' * @brief 打包含图片的数据帧\n';
@@ -776,8 +785,7 @@ export default {
                 hContent += ' * @param is_end 是否为结束帧\n';
                 hContent += ' * @note 不包含CRC计算，由外层CustomDataWithImage_Pack统一处理\n';
                 hContent += ' */\n';
-                hContent += 'void ImageBlock_Fill(ImageBlock_t *block, uint16_t img_id, uint16_t block_idx, \n';
-                hContent += '                     uint16_t total_block, const uint8_t *data, uint8_t data_len, uint8_t is_end);\n\n';
+                hContent += 'void ImageBlock_Fill(ImageBlock_t *block, uint16_t img_id, uint16_t block_idx, uint16_t total_block, const uint8_t *data, uint8_t data_len, uint8_t is_end);\n\n';
             }
             
             hContent += '#ifdef __cplusplus\n';
@@ -910,10 +918,10 @@ export default {
                 }, 0);
                 
                 cContent += '/**\n';
-                cContent += ' * @brief 写入纯数据\n';
+                cContent += ' * @brief 写入纯数据（不含图片）\n';
                 cContent += ' */\n';
-                cContent += 'static inline void CustomData_Write(const CustomData_t *data) {\n';
-                cContent += '    if (data != NULL) {\n';
+                cContent += 'void CustomData_Write(const CustomData_t *data) {\n';
+                cContent += '    if (data) {\n';
                 cContent += '        memcpy(&s_custom_data, data, sizeof(CustomData_t));\n';
                 cContent += '    }\n';
                 cContent += '}\n\n';
@@ -921,8 +929,8 @@ export default {
                 cContent += '/**\n';
                 cContent += ' * @brief 写入含图片的数据\n';
                 cContent += ' */\n';
-                cContent += 'static inline void CustomDataWithImage_Write(const CustomDataWithImage_t *data) {\n';
-                cContent += '    if (data != NULL) {\n';
+                cContent += 'void CustomDataWithImage_Write(const CustomDataWithImage_t *data) {\n';
+                cContent += '    if (data) {\n';
                 cContent += '        memcpy(&s_custom_data_with_image, data, sizeof(CustomDataWithImage_t));\n';
                 cContent += '    }\n';
                 cContent += '}\n\n';
@@ -947,8 +955,9 @@ export default {
                 cContent += '    *p++ = (uint8_t)((cmd_id >> 8) & 0xFF);\n';
                 cContent += '    \n';
                 cContent += '    // 数据段 (150 bytes) - 仅纯数据\n';
+                cContent += '    s_custom_data.packet_type = 0x00;\n';
                 cContent += '    memset(s_data_buffer, 0, CUSTOM_DATA_SIZE);\n';
-                cContent += `    memcpy(s_data_buffer, &s_custom_data, ${nonImageSize});\n`;
+                cContent += `    memcpy(s_data_buffer, &s_custom_data, ${nonImageSize + 1});\n`;
                 cContent += '    memcpy(p, s_data_buffer, CUSTOM_DATA_SIZE);\n';
                 cContent += '    p += CUSTOM_DATA_SIZE;\n';
                 cContent += '    \n';
@@ -980,8 +989,9 @@ export default {
                 cContent += '    *p++ = (uint8_t)((cmd_id >> 8) & 0xFF);\n';
                 cContent += '    \n';
                 cContent += '    // 数据段 (150 bytes) - 包含图片和伴随数据\n';
+                cContent += '    s_custom_data_with_image.packet_type = 0x01;\n';
                 cContent += '    memset(s_data_buffer, 0, CUSTOM_DATA_SIZE);\n';
-                cContent += '    memcpy(s_data_buffer, &s_custom_data_with_image, CUSTOM_DATA_ACTUAL_SIZE);\n';
+                cContent += `    memcpy(s_data_buffer, &s_custom_data_with_image, ${imageBlockCompanionSize.value + 128 + 1});\n`;
                 cContent += '    memcpy(p, s_data_buffer, CUSTOM_DATA_SIZE);\n';
                 cContent += '    p += CUSTOM_DATA_SIZE;\n';
                 cContent += '    \n';
@@ -996,8 +1006,8 @@ export default {
                 cContent += '/**\n';
                 cContent += ' * @brief 写入数据到内部缓冲区（内联实现）\n';
                 cContent += ' */\n';
-                cContent += 'static inline void CustomData_Write(const CustomData_t *data) {\n';
-                cContent += '    if (data != NULL) {\n';
+                cContent += 'void CustomData_Write(const CustomData_t *data) {\n';
+                cContent += '    if (data) {\n';
                 cContent += '        memcpy(&s_custom_data, data, sizeof(CustomData_t));\n';
                 cContent += '    }\n';
                 cContent += '}\n\n';
@@ -1035,17 +1045,6 @@ export default {
                 cContent += '    return s_frame_buffer;\n';
                 cContent += '}\n';
             }
-                cContent += '    *p++ = (uint8_t)((cmd_id >> 8) & 0xFF);\n';
-                cContent += '    \n';
-                cContent += '    // 数据段 (150 bytes) - 包含所有字段（含ImageBlock）\n';
-                cContent += '    memset(s_data_buffer, 0, CUSTOM_DATA_SIZE);\n';
-                cContent += '    memcpy(s_data_buffer, &s_custom_data, CUSTOM_DATA_ACTUAL_SIZE);\n';
-                cContent += '    memcpy(p, s_data_buffer, CUSTOM_DATA_SIZE);\n';
-                cContent += '    p += CUSTOM_DATA_SIZE;\n';
-                cContent += '    \n';
-                cContent += '    // 帧尾 CRC16 (2 bytes)\n';
-                cContent += '    uint16_t frame_crc = calc_crc16(s_frame_buffer, p - s_frame_buffer);\n';
-                cContent += '    *p++ = (uint8_t)(frame_crc & 0xFF);\n';
             
             // 如果有image_block类型，添加图片块函数实现
             if (hasImageBlock) {
@@ -1055,8 +1054,7 @@ export default {
                 cContent += ' * @brief 填充图片数据块\n';
                 cContent += ' * @note 不计算CRC，由外层协议统一保护\n';
                 cContent += ' */\n';
-                cContent += 'void ImageBlock_Fill(ImageBlock_t *block, uint16_t img_id, uint16_t block_idx, \n';
-                cContent += '                     uint16_t total_block, const uint8_t *data, uint8_t data_len, uint8_t is_end) {\n';
+                cContent += 'void ImageBlock_Fill(ImageBlock_t *block, uint16_t img_id, uint16_t block_idx, uint16_t total_block, const uint8_t *data, uint8_t data_len, uint8_t is_end) {\n';
                 cContent += '    if (block == NULL) return;\n';
                 cContent += '    if (data_len > IMAGE_BLOCK_DATA_SIZE) data_len = IMAGE_BLOCK_DATA_SIZE;\n';
                 cContent += '    \n';
@@ -1136,7 +1134,8 @@ export default {
                         name: configName.value.trim(),
                         description: configDescription.value.trim(),
                         items: items.value,
-                        totalSize: totalSize.value
+                        totalSize: totalSize.value,
+                        imageCompanionFields: imageCompanionFields.value.map((f: DataItem) => f.name)
                     })
                 });
                 const result = await response.json();
@@ -1173,6 +1172,16 @@ export default {
                     configName.value = result.config.name;
                     configDescription.value = result.config.description || '';
                     currentConfigName.value = name;
+
+                    // 恢复图片伴随字段
+                    if (result.config.imageCompanionFields) {
+                        const companionNames = result.config.imageCompanionFields;
+                        imageCompanionFields.value = items.value.filter((item: DataItem) => 
+                            companionNames.includes(item.name)
+                        );
+                    } else {
+                        imageCompanionFields.value = [];
+                    }
                 } else {
                     alert(`❌ 加载失败: ${result.error}`);
                 }

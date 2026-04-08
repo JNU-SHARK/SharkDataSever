@@ -60,8 +60,7 @@ check_deps() {
     if [ ! -d "node_modules" ]; then
         echo -e "${YELLOW}📦 首次运行，正在安装依赖...${NC}"
         echo ""
-        npm install -g cnpm --registry=https://registry.npmmirror.com
-        cnpm install
+        npm install --registry=https://registry.npmmirror.com
         
         if [ $? -ne 0 ]; then
             echo ""

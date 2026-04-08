@@ -276,12 +276,6 @@ message RaderInfoToClient {
     uint32 is_high_light = 5; // 是否特殊标识(0=否,1=是)
 }
 
-// 2.2.18 CustomByteBlock
-// 用途: 机器人自定义上传数据流 (机器人端对应0x0310) (频率: 50Hz)
-message CustomByteBlock {
-    bytes data = 1; // 最大为1.2 kbit的自定义数据包
-}
-
 // 2.2.20 TechCoreMotionStateSync
 // 用途: 科技核心运动状态同步 (频率: 1Hz)
 message TechCoreMotionStateSync {
@@ -341,4 +335,10 @@ message AirSupportStatusSync {
     uint32 airsupport_status = 1; // 空中支援状态
     uint32 left_time = 2; // 免费空中支援剩余时间
     uint32 cost_coins = 3; // 付费空中支援已花费金币
+}
+
+// 2.2.18 CustomByteBlock
+// 用途: 机器人自定义上传数据流 (机器人端对应0x0310) (频率: 50Hz)
+message CustomByteBlock {
+    bytes data = 1; // 最大为1.2 kbit的自定义数据包
 }
